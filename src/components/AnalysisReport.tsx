@@ -8,6 +8,8 @@ import {
   Calendar,
   Layout,
 } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface AnalysisData {
   topicSummary: string;
@@ -26,18 +28,19 @@ interface AnalysisReportProps {
 }
 
 function CompetitionBadge({ level }: { level: string }) {
+  const { locale } = useLocale();
   const colors: Record<string, string> = {
     low: "bg-green-100 text-green-700",
     medium: "bg-yellow-100 text-yellow-700",
     high: "bg-red-100 text-red-700",
   };
-  const labels: Record<string, string> = {
-    low: "Низкая",
-    medium: "Средняя",
-    high: "Высокая",
+  const labelKeys: Record<string, "competitionLow" | "competitionMedium" | "competitionHigh"> = {
+    low: "competitionLow",
+    medium: "competitionMedium",
+    high: "competitionHigh",
   };
   const cls = colors[level] || colors.medium;
-  const label = labels[level] || level;
+  const label = labelKeys[level] ? t(locale, labelKeys[level]) : level;
 
   return (
     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${cls}`}>
@@ -47,6 +50,8 @@ function CompetitionBadge({ level }: { level: string }) {
 }
 
 export function AnalysisReport({ analysis }: AnalysisReportProps) {
+  const { locale } = useLocale();
+
   return (
     <div className="bg-card-bg rounded-2xl border border-border p-6 sm:p-8 animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
@@ -55,9 +60,9 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
         </div>
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            SEO-анализ
+            {t(locale, "seoAnalysis")}
           </h2>
-          <p className="text-sm text-muted">Результаты анализа ключевых слов</p>
+          <p className="text-sm text-muted">{t(locale, "analysisResults")}</p>
         </div>
       </div>
 
@@ -69,7 +74,7 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Target className="w-4 h-4 text-primary" />
-            Основные ключевые слова
+            {t(locale, "mainKeywords")}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {analysis.mainKeywords.map((kw) => (
@@ -86,7 +91,7 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <TrendingUp className="w-4 h-4 text-emerald-600" />
-            Длинные ключевые фразы
+            {t(locale, "longTailKeywords")}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {analysis.longTailKeywords.map((kw) => (
@@ -103,15 +108,15 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <TrendingUp className="w-4 h-4 text-purple-600" />
-            Трендовые связанные темы
+            {t(locale, "trendingTopics")}
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {analysis.trendingRelated.map((t) => (
+            {analysis.trendingRelated.map((tr) => (
               <span
-                key={t}
+                key={tr}
                 className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium"
               >
-                {t}
+                {tr}
               </span>
             ))}
           </div>
@@ -120,7 +125,7 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Users className="w-4 h-4 text-blue-600" />
-            Целевая аудитория
+            {t(locale, "targetAudience")}
           </div>
           <p className="text-xs text-muted leading-relaxed">
             {analysis.targetAudience}
@@ -129,13 +134,13 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
 
         <div className="flex items-center gap-4">
           <div>
-            <span className="text-xs text-muted block mb-1">Конкуренция</span>
+            <span className="text-xs text-muted block mb-1">{t(locale, "competition")}</span>
             <CompetitionBadge level={analysis.competitionLevel} />
           </div>
           <div>
             <div className="flex items-center gap-1 text-xs text-muted mb-1">
               <Calendar className="w-3 h-3" />
-              Сезонность
+              {t(locale, "seasonality")}
             </div>
             <p className="text-xs text-foreground/80">{analysis.seasonality}</p>
           </div>
@@ -144,7 +149,7 @@ export function AnalysisReport({ analysis }: AnalysisReportProps) {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Layout className="w-4 h-4 text-orange-600" />
-            Рекомендуемая доска
+            {t(locale, "recommendedBoard")}
           </div>
           <p className="text-sm font-medium text-foreground">
             {analysis.recommendedBoardName}

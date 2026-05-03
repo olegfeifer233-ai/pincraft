@@ -2,6 +2,8 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { Key, Save, Check, ExternalLink } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface Settings {
   apiKey: string;
@@ -36,6 +38,7 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<Settings>(storedSettings);
   const [saved, setSaved] = useState(false);
+  const { locale } = useLocale();
 
   const handleSave = () => {
     localStorage.setItem("pincraft_settings", JSON.stringify(settings));
@@ -52,10 +55,9 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mb-2">Настройки</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t(locale, "settingsTitle")}</h1>
         <p className="text-sm text-muted">
-          Настройте API-ключи для работы с AI. Ключи хранятся только в вашем
-          браузере и никуда не отправляются кроме соответствующего AI-провайдера.
+          {t(locale, "settingsDesc")}
         </p>
       </div>
 
@@ -66,10 +68,10 @@ export default function SettingsPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">
-              API-ключ (BYOK)
+              {t(locale, "apiKeyTitle")}
             </h2>
             <p className="text-sm text-muted">
-              Вставьте свой ключ или используйте серверный по умолчанию
+              {t(locale, "apiKeyDesc")}
             </p>
           </div>
         </div>
@@ -80,7 +82,7 @@ export default function SettingsPage() {
               htmlFor="provider"
               className="block text-sm font-medium text-foreground mb-1.5"
             >
-              AI-провайдер
+              {t(locale, "providerLabel")}
             </label>
             <select
               id="provider"
@@ -90,8 +92,8 @@ export default function SettingsPage() {
               }
               className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             >
-              <option value="gemini">Google Gemini (рекомендуется)</option>
-              <option value="groq">Groq (Llama 3.3)</option>
+              <option value="gemini">{t(locale, "providerGemini")}</option>
+              <option value="groq">{t(locale, "providerGroq")}</option>
             </select>
           </div>
 
@@ -100,7 +102,7 @@ export default function SettingsPage() {
               htmlFor="apiKey"
               className="block text-sm font-medium text-foreground mb-1.5"
             >
-              API-ключ
+              {t(locale, "apiKeyLabel")}
             </label>
             <input
               id="apiKey"
@@ -109,13 +111,13 @@ export default function SettingsPage() {
               onChange={(e) =>
                 setSettings((s) => ({ ...s, apiKey: e.target.value }))
               }
-              placeholder="Оставьте пустым для использования серверного ключа"
+              placeholder={t(locale, "apiKeyPlaceholder")}
               className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono text-sm"
             />
           </div>
 
           <div className="bg-accent rounded-xl px-4 py-3 text-xs text-muted space-y-2">
-            <p className="font-medium text-foreground">Где получить ключ:</p>
+            <p className="font-medium text-foreground">{t(locale, "whereToGetKey")}</p>
             <div className="space-y-1">
               <a
                 href="https://aistudio.google.com/apikey"
@@ -124,7 +126,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-1.5 text-blue-600 hover:underline"
               >
                 <ExternalLink className="w-3 h-3" />
-                Google Gemini API — бесплатно, 15 запросов/мин
+                {t(locale, "geminiLink")}
               </a>
               <a
                 href="https://console.groq.com/keys"
@@ -133,7 +135,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-1.5 text-blue-600 hover:underline"
               >
                 <ExternalLink className="w-3 h-3" />
-                Groq API — бесплатно, быстрый inference
+                {t(locale, "groqLink")}
               </a>
             </div>
           </div>
@@ -147,12 +149,12 @@ export default function SettingsPage() {
             {saved ? (
               <>
                 <Check className="w-4 h-4" />
-                Сохранено
+                {t(locale, "saved")}
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Сохранить
+                {t(locale, "save")}
               </>
             )}
           </button>
@@ -160,16 +162,15 @@ export default function SettingsPage() {
             onClick={handleClear}
             className="px-5 py-2.5 rounded-xl border border-border text-muted font-medium text-sm hover:text-foreground hover:border-foreground/20 transition-colors"
           >
-            Сбросить
+            {t(locale, "reset")}
           </button>
         </div>
       </div>
 
       <div className="mt-6 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
-        <strong>Безопасность:</strong> Ваш API-ключ хранится только в{" "}
-        <code className="bg-blue-100 px-1 rounded">localStorage</code> вашего
-        браузера. Он отправляется только на сервер PinCraft для выполнения
-        запросов к AI-провайдеру. Мы не сохраняем и не логируем ваши ключи.
+        <strong>{t(locale, "securityNote")}</strong> {t(locale, "securityText")}{" "}
+        <code className="bg-blue-100 px-1 rounded">localStorage</code>{" "}
+        {t(locale, "securityText2")}
       </div>
     </div>
   );

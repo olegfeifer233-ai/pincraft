@@ -1,6 +1,8 @@
 "use client";
 
 import { Search, BarChart3, FileText, Check } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t, type UILocale, type TranslationKey } from "@/lib/i18n";
 
 type Step = "idle" | "analyzing" | "analyzed" | "generating" | "done";
 
@@ -8,11 +10,11 @@ interface StepIndicatorProps {
   currentStep: Step;
 }
 
-const steps = [
-  { id: "analyzing", label: "SEO Анализ", icon: Search },
-  { id: "analyzed", label: "Отчёт", icon: BarChart3 },
-  { id: "generating", label: "Контент пина", icon: FileText },
-  { id: "done", label: "Готово", icon: Check },
+const stepDefs: { id: string; labelKey: TranslationKey; icon: typeof Search }[] = [
+  { id: "analyzing", labelKey: "stepAnalysis", icon: Search },
+  { id: "analyzed", labelKey: "stepReport", icon: BarChart3 },
+  { id: "generating", labelKey: "stepContent", icon: FileText },
+  { id: "done", labelKey: "stepDone", icon: Check },
 ];
 
 function getStepStatus(
@@ -29,11 +31,13 @@ function getStepStatus(
 }
 
 export function StepIndicator({ currentStep }: StepIndicatorProps) {
+  const { locale } = useLocale();
+
   if (currentStep === "idle") return null;
 
   return (
     <div className="flex items-center justify-center gap-1 sm:gap-2 py-4 animate-fade-in">
-      {steps.map((step, i) => {
+      {stepDefs.map((step, i) => {
         const status = getStepStatus(step.id, currentStep);
         const Icon = step.icon;
 
@@ -62,10 +66,10 @@ export function StepIndicator({ currentStep }: StepIndicatorProps) {
                     : "text-muted"
                 }`}
               >
-                {step.label}
+                {t(locale, step.labelKey)}
               </span>
             </div>
-            {i < steps.length - 1 && (
+            {i < stepDefs.length - 1 && (
               <div
                 className={`w-6 sm:w-10 h-px ${
                   status === "done" ? "bg-green-300" : "bg-border"

@@ -5,6 +5,8 @@ import { TopicForm } from "@/components/TopicForm";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { PinContent } from "@/components/PinContent";
 import { StepIndicator } from "@/components/StepIndicator";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 type Step = "idle" | "analyzing" | "analyzed" | "generating" | "done";
 
@@ -57,6 +59,7 @@ export default function Home() {
   const [pinContent, setPinContent] = useState<PinContentData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const analysisRef = useRef<AnalysisData | null>(null);
+  const { locale } = useLocale();
 
   const handleSubmit = async () => {
     setError(null);
@@ -87,7 +90,7 @@ export default function Home() {
       setAnalysis(analysisResult);
       setStep("analyzed");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка при анализе");
+      setError(err instanceof Error ? err.message : t(locale, "errorAnalysis"));
       setStep("idle");
       return;
     }
@@ -117,7 +120,7 @@ export default function Home() {
       setStep("done");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Ошибка при генерации контента"
+        err instanceof Error ? err.message : t(locale, "errorGeneration")
       );
       setStep("analyzed");
     }
@@ -130,7 +133,7 @@ export default function Home() {
           Pin<span className="text-primary">Craft</span>
         </h1>
         <p className="text-muted text-sm sm:text-base">
-          От темы до готового пина — автоматически
+          {t(locale, "subtitle")}
         </p>
       </div>
 
@@ -148,7 +151,7 @@ export default function Home() {
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 animate-fade-in">
-            <strong>Ошибка:</strong> {error}
+            <strong>{t(locale, "errorPrefix")}:</strong> {error}
           </div>
         )}
 

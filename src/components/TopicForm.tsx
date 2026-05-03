@@ -1,6 +1,8 @@
 "use client";
 
 import { Search, Sparkles } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
 interface TopicFormProps {
   topic: string;
@@ -19,6 +21,8 @@ export function TopicForm({
   onSubmit,
   isLoading,
 }: TopicFormProps) {
+  const { locale } = useLocale();
+
   return (
     <div className="bg-card-bg rounded-2xl border border-border p-6 sm:p-8">
       <div className="flex items-center gap-3 mb-6">
@@ -27,10 +31,10 @@ export function TopicForm({
         </div>
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            Создать пин
+            {t(locale, "createPin")}
           </h2>
           <p className="text-sm text-muted">
-            Введите тему — мы сделаем SEO-анализ и создадим контент
+            {t(locale, "createPinDesc")}
           </p>
         </div>
       </div>
@@ -41,7 +45,7 @@ export function TopicForm({
             htmlFor="topic"
             className="block text-sm font-medium text-foreground mb-1.5"
           >
-            Тема пина
+            {t(locale, "topicLabel")}
           </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
@@ -53,7 +57,7 @@ export function TopicForm({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !isLoading && topic.trim()) onSubmit();
               }}
-              placeholder="Например: минималистичный дизайн интерьера 2025"
+              placeholder={t(locale, "topicPlaceholder")}
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
             />
           </div>
@@ -65,7 +69,7 @@ export function TopicForm({
               htmlFor="language"
               className="block text-sm font-medium text-foreground mb-1.5"
             >
-              Язык результатов
+              {t(locale, "languageLabel")}
             </label>
             <select
               id="language"
@@ -89,12 +93,12 @@ export function TopicForm({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin-slow" />
-                Анализирую...
+                {t(locale, "analyzing")}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Создать
+                {t(locale, "createButton")}
               </>
             )}
           </button>
