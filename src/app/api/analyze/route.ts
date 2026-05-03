@@ -5,8 +5,9 @@ import { buildAnalyzePrompt } from "@/lib/prompts";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topic, language = "ru", apiKey, provider } = body as {
+    const { topic, websiteUrl, language = "ru", apiKey, provider } = body as {
       topic: string;
+      websiteUrl?: string;
       language?: string;
       apiKey?: string;
       provider?: AIProvider;
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildAnalyzePrompt(topic.trim(), language);
+    const prompt = buildAnalyzePrompt(topic.trim(), language, websiteUrl);
     const raw = await callAI(prompt, { apiKey, provider });
 
     const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();

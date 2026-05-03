@@ -5,8 +5,9 @@ import { buildGeneratePrompt } from "@/lib/prompts";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topic, keywords, language = "ru", apiKey, provider } = body as {
+    const { topic, websiteUrl, keywords, language = "ru", apiKey, provider } = body as {
       topic: string;
+      websiteUrl?: string;
       keywords: string[];
       language?: string;
       apiKey?: string;
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildGeneratePrompt(topic.trim(), keywords, language);
+    const prompt = buildGeneratePrompt(topic.trim(), keywords, language, websiteUrl);
     const raw = await callAI(prompt, { apiKey, provider });
 
     const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();

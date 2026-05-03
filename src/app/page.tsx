@@ -63,6 +63,7 @@ function getStoredSettings(): { apiKey?: string; provider?: string } {
 
 export default function Home() {
   const [topic, setTopic] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [step, setStep] = useState<Step>("idle");
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [pinContent, setPinContent] = useState<PinContentData | null>(null);
@@ -117,6 +118,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: topic.trim(),
+          websiteUrl: websiteUrl.trim() || undefined,
           language,
           apiKey: settings.apiKey || undefined,
           provider: settings.provider || undefined,
@@ -148,6 +150,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: topic.trim(),
+          websiteUrl: websiteUrl.trim() || undefined,
           keywords,
           language,
           apiKey: settings.apiKey || undefined,
@@ -198,6 +201,8 @@ export default function Home() {
         <TopicForm
           topic={topic}
           setTopic={setTopic}
+          websiteUrl={websiteUrl}
+          setWebsiteUrl={setWebsiteUrl}
           onSubmit={handleSubmit}
           isLoading={step === "analyzing" || step === "generating" || step === "generatingImage"}
         />

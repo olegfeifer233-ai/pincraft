@@ -140,6 +140,8 @@ const translations = {
     accountBannerDesc: "Wir helfen Ihnen, das perfekte Profil f\u00fcr Ihre Nische zu erstellen",
     pinBannerTitle: "Bereit, Pins zu erstellen?",
     pinBannerDesc: "SEO-optimierte Pins mit KI-generierten Bildern erstellen",
+    pinWebsitePlaceholder: "https://meine-seite.de oder Amazon/Etsy-Link",
+    pinWebsiteHint: "Optional: Geben Sie Ihre Website ein \u2014 Pins werden auf Ihren Stil und Ihre Marke abgestimmt",
   },
   ru: {
     settings: "Настройки",
@@ -261,6 +263,8 @@ const translations = {
     accountBannerDesc: "Поможем создать идеальный профиль для вашей ниши",
     pinBannerTitle: "Готовы создавать пины?",
     pinBannerDesc: "SEO-оптимизированные пины с AI-картинками",
+    pinWebsitePlaceholder: "https://мой-сайт.ru или ссылка Amazon/Etsy",
+    pinWebsiteHint: "Необязательно: укажите сайт — пины будут адаптированы под ваш стиль и бренд",
   },
   en: {
     settings: "Settings",
@@ -382,6 +386,8 @@ const translations = {
     accountBannerDesc: "We'll help you create the perfect profile for your niche",
     pinBannerTitle: "Ready to create pins?",
     pinBannerDesc: "Create SEO-optimized pins with AI-generated images",
+    pinWebsitePlaceholder: "https://my-site.com or Amazon/Etsy link",
+    pinWebsiteHint: "Optional: enter your website — pins will be tailored to your style and brand",
   },
 } as const;
 

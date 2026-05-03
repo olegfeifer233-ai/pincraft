@@ -1,12 +1,14 @@
 "use client";
 
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, Globe } from "lucide-react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
 interface TopicFormProps {
   topic: string;
   setTopic: (topic: string) => void;
+  websiteUrl: string;
+  setWebsiteUrl: (url: string) => void;
   onSubmit: () => void;
   isLoading: boolean;
 }
@@ -14,6 +16,8 @@ interface TopicFormProps {
 export function TopicForm({
   topic,
   setTopic,
+  websiteUrl,
+  setWebsiteUrl,
   onSubmit,
   isLoading,
 }: TopicFormProps) {
@@ -57,6 +61,27 @@ export function TopicForm({
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
             />
           </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="websiteUrl"
+            className="block text-sm font-medium text-foreground mb-1.5"
+          >
+            {t(locale, "websiteUrlLabel")}
+          </label>
+          <div className="relative">
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+            <input
+              id="websiteUrl"
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder={t(locale, "pinWebsitePlaceholder")}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+            />
+          </div>
+          <p className="text-xs text-muted mt-1">{t(locale, "pinWebsiteHint")}</p>
         </div>
 
         <div className="flex justify-end">

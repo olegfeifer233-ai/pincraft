@@ -1,8 +1,11 @@
-export function buildAnalyzePrompt(topic: string, language: string): string {
+export function buildAnalyzePrompt(topic: string, language: string, websiteUrl?: string): string {
   const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  const websiteContext = websiteUrl
+    ? `\nSource website/shop: ${websiteUrl}\nAnalyze this website to understand the brand, products, and visual style. All recommendations should be optimized to drive traffic from Pinterest to this website. Use the website's design style, color palette, and content themes to inform the pin strategy.`
+    : "";
   return `You are a Pinterest SEO data analyst. Provide a SPECIFIC, DATA-DRIVEN analysis for pin creation.
 
-Topic: "${topic}"
+Topic: "${topic}"${websiteContext}
 
 CRITICAL RULES:
 - Do NOT use generic filler phrases like "is very popular", "has great potential", "ist sehr beliebt", "bietet großes Potenzial"
@@ -33,12 +36,16 @@ Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JS
 export function buildGeneratePrompt(
   topic: string,
   keywords: string[],
-  language: string
+  language: string,
+  websiteUrl?: string
 ): string {
   const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  const websiteContext = websiteUrl
+    ? `\nSource website/shop: ${websiteUrl}\nThe pin should drive traffic to this website. Include the website URL context in the description naturally. The image style should match the website's brand aesthetic. The call to action should encourage visiting the website.`
+    : "";
   return `You are a Pinterest content creation expert specializing in SEO-optimized pins.
 
-Topic: "${topic}"
+Topic: "${topic}"${websiteContext}
 SEO Keywords: ${keywords.join(", ")}
 
 Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
