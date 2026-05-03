@@ -49,7 +49,7 @@ async function generateWithGemini(
   apiKey: string,
   prompt: string
 ): Promise<{ dataUrl: string; mimeType: string }> {
-  const models = ["gemini-2.5-flash-image", "gemini-2.0-flash-exp"];
+  const models = ["gemini-2.5-flash-image", "gemini-3.1-flash-image-preview"];
 
   for (const model of models) {
     try {

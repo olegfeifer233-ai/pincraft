@@ -5,7 +5,6 @@ import { TopicForm } from "@/components/TopicForm";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { PinContent } from "@/components/PinContent";
 import { PinImage } from "@/components/PinImage";
-import { AccountSetup } from "@/components/AccountSetup";
 import { BoardCard } from "@/components/BoardCard";
 import { StepIndicator } from "@/components/StepIndicator";
 import { useLocale } from "@/components/LocaleProvider";
@@ -62,7 +61,6 @@ function getStoredSettings(): { apiKey?: string; provider?: string } {
 
 export default function Home() {
   const [topic, setTopic] = useState("");
-  const [language, setLanguage] = useState("de");
   const [step, setStep] = useState<Step>("idle");
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [pinContent, setPinContent] = useState<PinContentData | null>(null);
@@ -72,6 +70,7 @@ export default function Home() {
   const analysisRef = useRef<AnalysisData | null>(null);
   const pinContentRef = useRef<PinContentData | null>(null);
   const { locale } = useLocale();
+  const language = locale;
 
   const generateImage = async (prompt: string) => {
     const settings = getStoredSettings();
@@ -197,8 +196,6 @@ export default function Home() {
         <TopicForm
           topic={topic}
           setTopic={setTopic}
-          language={language}
-          setLanguage={setLanguage}
           onSubmit={handleSubmit}
           isLoading={step === "analyzing" || step === "generating" || step === "generatingImage"}
         />
@@ -213,11 +210,13 @@ export default function Home() {
 
         {analysis && <AnalysisReport analysis={analysis} />}
 
-        {analysis && analysis.accountName && (
-          <AccountSetup
-            accountNiche={analysis.accountNiche ?? ""}
-            accountName={analysis.accountName}
-            accountBio={analysis.accountBio ?? ""}
+        {analysis && pinContent && (
+          <BoardCard
+            boardName={analysis.recommendedBoardName}
+            boardDescription={analysis.recommendedBoardDescription}
+            boardCategory={analysis.boardCategory}
+            boardTags={analysis.boardTags}
+            boardStrategy={analysis.boardStrategy}
           />
         )}
 
@@ -228,16 +227,6 @@ export default function Home() {
             imageDataUrl={imageDataUrl ?? ""}
             isGenerating={isImageGenerating}
             onRegenerate={handleRegenerate}
-          />
-        )}
-
-        {analysis && pinContent && (
-          <BoardCard
-            boardName={analysis.recommendedBoardName}
-            boardDescription={analysis.recommendedBoardDescription}
-            boardCategory={analysis.boardCategory}
-            boardTags={analysis.boardTags}
-            boardStrategy={analysis.boardStrategy}
           />
         )}
       </div>
