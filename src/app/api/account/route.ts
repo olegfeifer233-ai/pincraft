@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { callAI, AIProvider } from "@/lib/ai";
+import { scrapeWebsite } from "@/lib/scraper";
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,9 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
-    const websiteContext = websiteUrl
-      ? `\nThe user has a website/shop: ${websiteUrl}\nAnalyze this URL to understand the brand, products, and target audience. The Pinterest account should be optimized to drive traffic to this website. The account name and bio should create a clear connection between the Pinterest profile and this website/shop.`
-      : "";
+
+    let websiteContext = "";
+    if (websiteUrl) {
+      const content = await scrapeWebsite(websiteUrl);
+      websiteContext = `\nThe user has a website/shop: ${websiteUrl}\nHere is the ACTUAL content from the website:\n---\n${content}\n---\nUse this real content to understand the brand, products, services, and target audience. The Pinterest account should be optimized to drive traffic to this website. The account name and bio should create a clear connection between the Pinterest profile and this website/shop.`;
+    }
 
     const prompt = `You are a Pinterest marketing expert. Analyze this SPECIFIC niche and give CONCRETE, DATA-DRIVEN recommendations.
 

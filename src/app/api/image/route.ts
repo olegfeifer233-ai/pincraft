@@ -19,24 +19,41 @@ export async function POST(request: NextRequest) {
     const geminiKey = apiKey && provider === "gemini" ? apiKey : process.env.GEMINI_API_KEY;
     const togetherKey = process.env.TOGETHER_API_KEY;
 
+    let lastError: string | null = null;
+
     if (geminiKey) {
       try {
         const result = await generateWithGemini(geminiKey, pinterestPrompt);
         return Response.json({ success: true, image: result });
       } catch (err) {
         console.error("Gemini image generation failed:", err);
-        if (!togetherKey) throw err;
+        lastError = err instanceof Error ? err.message : "Gemini failed";
       }
     }
 
     if (togetherKey) {
-      const result = await generateWithTogether(togetherKey, pinterestPrompt);
-      return Response.json({ success: true, image: result });
+      try {
+        const result = await generateWithTogether(togetherKey, pinterestPrompt);
+        return Response.json({ success: true, image: result });
+      } catch (err) {
+        console.error("Together image generation failed:", err);
+        lastError = err instanceof Error ? err.message : "Together failed";
+      }
     }
 
+    if (!geminiKey && !togetherKey) {
+      return Response.json(
+        { error: "No image generation API key configured. Set GEMINI_API_KEY or TOGETHER_API_KEY." },
+        { status: 400 }
+      );
+    }
+
+    const isQuotaError = lastError && (lastError.includes("429") || lastError.includes("quota") || lastError.includes("RESOURCE_EXHAUSTED"));
     return Response.json(
-      { error: "No image generation API key configured. Set GEMINI_API_KEY or TOGETHER_API_KEY." },
-      { status: 400 }
+      { error: isQuotaError
+          ? "Image generation quota exhausted for today. Try again tomorrow or use a different API key in Settings."
+          : lastError || "Image generation failed" },
+      { status: isQuotaError ? 429 : 500 }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

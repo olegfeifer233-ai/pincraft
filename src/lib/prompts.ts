@@ -1,8 +1,11 @@
-export function buildAnalyzePrompt(topic: string, language: string, websiteUrl?: string): string {
+export function buildAnalyzePrompt(topic: string, language: string, websiteUrl?: string, websiteContent?: string): string {
   const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
-  const websiteContext = websiteUrl
-    ? `\nSource website/shop: ${websiteUrl}\nAnalyze this website to understand the brand, products, and visual style. All recommendations should be optimized to drive traffic from Pinterest to this website. Use the website's design style, color palette, and content themes to inform the pin strategy.`
-    : "";
+  let websiteContext = "";
+  if (websiteUrl && websiteContent) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nACTUAL website content:\n---\n${websiteContent}\n---\nUse this real content to understand the brand, products, and visual style. All recommendations should be optimized to drive traffic from Pinterest to this website. Use the website's actual content themes, products, and services to inform the pin strategy.`;
+  } else if (websiteUrl) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nAnalyze based on the URL. All recommendations should be optimized to drive traffic from Pinterest to this website.`;
+  }
   return `You are a Pinterest SEO data analyst. Provide a SPECIFIC, DATA-DRIVEN analysis for pin creation.
 
 Topic: "${topic}"${websiteContext}
@@ -37,12 +40,16 @@ export function buildGeneratePrompt(
   topic: string,
   keywords: string[],
   language: string,
-  websiteUrl?: string
+  websiteUrl?: string,
+  websiteContent?: string
 ): string {
   const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
-  const websiteContext = websiteUrl
-    ? `\nSource website/shop: ${websiteUrl}\nThe pin should drive traffic to this website. Include the website URL context in the description naturally. The image style should match the website's brand aesthetic. The call to action should encourage visiting the website.`
-    : "";
+  let websiteContext = "";
+  if (websiteUrl && websiteContent) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nACTUAL website content:\n---\n${websiteContent}\n---\nThe pin should drive traffic to this website. Use the real content above to match the brand's tone, style, and messaging. The image style should match the website's brand aesthetic. The call to action should encourage visiting the website.`;
+  } else if (websiteUrl) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nThe pin should drive traffic to this website. The call to action should encourage visiting the website.`;
+  }
   return `You are a Pinterest content creation expert specializing in SEO-optimized pins.
 
 Topic: "${topic}"${websiteContext}

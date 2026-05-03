@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { callAI, AIProvider } from "@/lib/ai";
 import { buildGeneratePrompt } from "@/lib/prompts";
+import { scrapeWebsite } from "@/lib/scraper";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildGeneratePrompt(topic.trim(), keywords, language, websiteUrl);
+    let websiteContent: string | undefined;
+    if (websiteUrl) {
+      websiteContent = await scrapeWebsite(websiteUrl);
+    }
+
+    const prompt = buildGeneratePrompt(topic.trim(), keywords, language, websiteUrl, websiteContent);
     const raw = await callAI(prompt, { apiKey, provider });
 
     const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
