@@ -4,11 +4,13 @@ import { useState, useRef } from "react";
 import { TopicForm } from "@/components/TopicForm";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { PinContent } from "@/components/PinContent";
+import { PinImage } from "@/components/PinImage";
+import { BoardCard } from "@/components/BoardCard";
 import { StepIndicator } from "@/components/StepIndicator";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
-type Step = "idle" | "analyzing" | "analyzed" | "generating" | "done";
+type Step = "idle" | "analyzing" | "analyzed" | "generating" | "generatingImage" | "done";
 
 interface AnalysisData {
   topicSummary: string;
@@ -57,15 +59,44 @@ export default function Home() {
   const [step, setStep] = useState<Step>("idle");
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [pinContent, setPinContent] = useState<PinContentData | null>(null);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [isImageGenerating, setIsImageGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const analysisRef = useRef<AnalysisData | null>(null);
+  const pinContentRef = useRef<PinContentData | null>(null);
   const { locale } = useLocale();
+
+  const generateImage = async (prompt: string) => {
+    const settings = getStoredSettings();
+    setIsImageGenerating(true);
+    try {
+      const res = await fetch("/api/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          apiKey: settings.apiKey || undefined,
+          provider: settings.provider || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setImageDataUrl(data.image.dataUrl);
+    } catch (err) {
+      console.error("Image generation error:", err);
+      setError(err instanceof Error ? err.message : t(locale, "errorImage"));
+    } finally {
+      setIsImageGenerating(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(null);
     setAnalysis(null);
     setPinContent(null);
+    setImageDataUrl(null);
     analysisRef.current = null;
+    pinContentRef.current = null;
 
     const settings = getStoredSettings();
 
@@ -97,6 +128,7 @@ export default function Home() {
 
     // Step 2: Generate pin content using analysis result directly
     setStep("generating");
+    let pinContentResult: PinContentData;
     try {
       const keywords = [
         ...analysisResult.mainKeywords,
@@ -116,13 +148,30 @@ export default function Home() {
       });
       const generateData = await generateRes.json();
       if (!generateRes.ok) throw new Error(generateData.error);
-      setPinContent(generateData.pinContent);
-      setStep("done");
+      pinContentResult = generateData.pinContent;
+      pinContentRef.current = pinContentResult;
+      setPinContent(pinContentResult);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : t(locale, "errorGeneration")
       );
       setStep("analyzed");
+      return;
+    }
+
+    // Step 3: Generate image from the image prompt
+    setStep("generatingImage");
+    await generateImage(pinContentResult.imagePrompt);
+    setStep("done");
+  };
+
+  const handleRegenerate = () => {
+    if (pinContentRef.current) {
+      setError(null);
+      setStep("generatingImage");
+      generateImage(pinContentRef.current.imagePrompt).then(() => {
+        setStep("done");
+      });
     }
   };
 
@@ -144,7 +193,7 @@ export default function Home() {
           language={language}
           setLanguage={setLanguage}
           onSubmit={handleSubmit}
-          isLoading={step === "analyzing" || step === "generating"}
+          isLoading={step === "analyzing" || step === "generating" || step === "generatingImage"}
         />
 
         <StepIndicator currentStep={step} />
@@ -158,6 +207,21 @@ export default function Home() {
         {analysis && <AnalysisReport analysis={analysis} />}
 
         {pinContent && <PinContent pinContent={pinContent} />}
+
+        {(imageDataUrl || isImageGenerating) && (
+          <PinImage
+            imageDataUrl={imageDataUrl ?? ""}
+            isGenerating={isImageGenerating}
+            onRegenerate={handleRegenerate}
+          />
+        )}
+
+        {analysis && pinContent && (
+          <BoardCard
+            boardName={analysis.recommendedBoardName}
+            boardDescription={analysis.recommendedBoardDescription}
+          />
+        )}
       </div>
     </div>
   );

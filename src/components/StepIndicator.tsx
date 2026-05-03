@@ -1,10 +1,10 @@
 "use client";
 
-import { Search, BarChart3, FileText, Check } from "lucide-react";
+import { Search, BarChart3, FileText, ImageIcon, Check } from "lucide-react";
 import { useLocale } from "@/components/LocaleProvider";
-import { t, type UILocale, type TranslationKey } from "@/lib/i18n";
+import { t, type TranslationKey } from "@/lib/i18n";
 
-type Step = "idle" | "analyzing" | "analyzed" | "generating" | "done";
+type Step = "idle" | "analyzing" | "analyzed" | "generating" | "generatingImage" | "done";
 
 interface StepIndicatorProps {
   currentStep: Step;
@@ -14,6 +14,7 @@ const stepDefs: { id: string; labelKey: TranslationKey; icon: typeof Search }[] 
   { id: "analyzing", labelKey: "stepAnalysis", icon: Search },
   { id: "analyzed", labelKey: "stepReport", icon: BarChart3 },
   { id: "generating", labelKey: "stepContent", icon: FileText },
+  { id: "generatingImage", labelKey: "stepImage", icon: ImageIcon },
   { id: "done", labelKey: "stepDone", icon: Check },
 ];
 
@@ -21,7 +22,7 @@ function getStepStatus(
   stepId: string,
   currentStep: Step
 ): "done" | "active" | "pending" {
-  const order = ["analyzing", "analyzed", "generating", "done"];
+  const order = ["analyzing", "analyzed", "generating", "generatingImage", "done"];
   const currentIdx = order.indexOf(currentStep);
   const stepIdx = order.indexOf(stepId);
 

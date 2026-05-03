@@ -3,7 +3,7 @@ export function buildAnalyzePrompt(topic: string, language: string): string {
 
 Topic: "${topic}"
 
-Respond in ${language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+Respond in ${language === "de" ? "German" : language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
 
 {
   "topicSummary": "Brief summary of the topic and its Pinterest potential (2-3 sentences)",
@@ -34,7 +34,7 @@ export function buildGeneratePrompt(
 Topic: "${topic}"
 SEO Keywords: ${keywords.join(", ")}
 
-Respond in ${language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+Respond in ${language === "de" ? "German" : language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
 
 {
   "pinTitle": "SEO-optimized pin title (max 100 characters, must include primary keyword)",
