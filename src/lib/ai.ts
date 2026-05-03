@@ -46,9 +46,22 @@ export async function callAI(
 
 async function callGemini(apiKey: string, prompt: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const models = ["gemini-2.5-flash-preview-05-20", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+
+  for (const modelName of models) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (err) {
+      const is429 = err instanceof Error && err.message.includes("429");
+      const isLast = modelName === models[models.length - 1];
+      if (is429 && !isLast) continue;
+      throw err;
+    }
+  }
+
+  throw new Error("All Gemini models failed");
 }
 
 async function callGroq(apiKey: string, prompt: string): Promise<string> {
