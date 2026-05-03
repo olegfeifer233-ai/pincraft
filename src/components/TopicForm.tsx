@@ -73,6 +73,7 @@ export function TopicForm({
               onChange={(e) => setLanguage(e.target.value)}
               className="px-3 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             >
+              <option value="de">Deutsch</option>
               <option value="ru">Русский</option>
               <option value="en">English</option>
             </select>

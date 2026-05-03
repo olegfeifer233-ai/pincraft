@@ -51,7 +51,7 @@ function getStoredSettings(): { apiKey?: string; provider?: string } {
 
 export default function Home() {
   const [topic, setTopic] = useState("");
-  const [language, setLanguage] = useState("ru");
+  const [language, setLanguage] = useState("de");
   const [step, setStep] = useState<Step>("idle");
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [pinContent, setPinContent] = useState<PinContentData | null>(null);
