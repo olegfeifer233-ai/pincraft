@@ -1,6 +1,6 @@
 "use client";
 
-import { Layout, Copy, Check, ExternalLink } from "lucide-react";
+import { Layout, Copy, Check, ExternalLink, Tag, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
@@ -8,6 +8,9 @@ import { t } from "@/lib/i18n";
 interface BoardCardProps {
   boardName: string;
   boardDescription: string;
+  boardCategory?: string;
+  boardTags?: string[];
+  boardStrategy?: string;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -35,7 +38,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function BoardCard({ boardName, boardDescription }: BoardCardProps) {
+export function BoardCard({ boardName, boardDescription, boardCategory, boardTags, boardStrategy }: BoardCardProps) {
   const { locale } = useLocale();
 
   return (
@@ -76,6 +79,48 @@ export function BoardCard({ boardName, boardDescription }: BoardCardProps) {
             {boardDescription}
           </p>
         </div>
+
+        {boardCategory && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground">
+              {t(locale, "boardCategory")}
+            </span>
+            <span className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
+              {boardCategory}
+            </span>
+          </div>
+        )}
+
+        {boardTags && boardTags.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Tag className="w-4 h-4 text-orange-600" />
+              {t(locale, "boardTagsLabel")}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {boardTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-medium"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {boardStrategy && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <TrendingUp className="w-4 h-4 text-orange-600" />
+              {t(locale, "boardStrategyLabel")}
+            </div>
+            <p className="text-sm text-foreground/80 bg-orange-50/50 border border-orange-100 rounded-xl px-4 py-3 leading-relaxed">
+              {boardStrategy}
+            </p>
+          </div>
+        )}
 
         <div className="pt-3 border-t border-border">
           <button

@@ -1,9 +1,10 @@
 export function buildAnalyzePrompt(topic: string, language: string): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
   return `You are a Pinterest SEO expert. Analyze the following topic for Pinterest pin creation.
 
 Topic: "${topic}"
 
-Respond in ${language === "de" ? "German" : language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
 
 {
   "topicSummary": "Brief summary of the topic and its Pinterest potential (2-3 sentences)",
@@ -14,13 +15,23 @@ Respond in ${language === "de" ? "German" : language === "ru" ? "Russian" : "Eng
   "competitionLevel": "low" | "medium" | "high",
   "seasonality": "Description of whether this topic has seasonal peaks",
   "recommendedBoardName": "Suggested Pinterest board name optimized for SEO",
-  "recommendedBoardDescription": "SEO-optimized board description (2-3 sentences with keywords naturally included)"
+  "recommendedBoardDescription": "SEO-optimized board description (2-3 sentences with keywords naturally included)",
+  "boardCategory": "The Pinterest category that best fits this topic (e.g. Home Decor, Fashion, Food & Drink, DIY & Crafts, etc.)",
+  "boardTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+  "boardStrategy": "Content strategy for this board: how often to pin, what types of content to mix (own pins vs repins), recommended number of pins to start with, and tips for board growth (2-3 sentences)",
+  "accountNiche": "Recommended niche positioning for a Pinterest account focused on this topic (1-2 sentences)",
+  "accountName": "Suggested Pinterest account/display name optimized for this niche (catchy, professional, includes niche keyword)",
+  "accountBio": "Suggested Pinterest bio/about text optimized for SEO and niche positioning (2-3 sentences, includes keywords, call to action)"
 }
 
 Important:
 - Keywords should be actual Pinterest search terms people use
 - Long-tail keywords should be 3-5 words each
 - Board name should be catchy but keyword-rich
+- Board tags should be single words or short phrases relevant to the topic
+- Board strategy should be actionable and specific
+- Account name should be memorable and niche-specific
+- Account bio should include keywords naturally and explain what the account offers
 - All text must be optimized for Pinterest search algorithm`;
 }
 
@@ -29,12 +40,13 @@ export function buildGeneratePrompt(
   keywords: string[],
   language: string
 ): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
   return `You are a Pinterest content creation expert specializing in SEO-optimized pins.
 
 Topic: "${topic}"
 SEO Keywords: ${keywords.join(", ")}
 
-Respond in ${language === "de" ? "German" : language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
 
 {
   "pinTitle": "SEO-optimized pin title (max 100 characters, must include primary keyword)",

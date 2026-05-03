@@ -104,8 +104,17 @@ const translations = {
     boardName: "Board-Name",
     boardDescription: "Board-Beschreibung",
     boardCategory: "Kategorie",
+    boardTagsLabel: "Board-Tags",
+    boardStrategyLabel: "Content-Strategie",
     publishToPinterest: "Auf Pinterest veröffentlichen",
     pinterestComingSoon: "Pinterest-Integration — demnächst verfügbar",
+
+    // Account setup
+    accountSetupTitle: "Pinterest-Konto einrichten",
+    accountSetupDesc: "Empfehlungen für Ihr Pinterest-Profil basierend auf der Nische",
+    accountNicheLabel: "Empfohlene Nische",
+    accountNameLabel: "Profilname",
+    accountBioLabel: "Profil-Bio",
   },
   ru: {
     settings: "Настройки",
@@ -193,8 +202,16 @@ const translations = {
     boardName: "Название доски",
     boardDescription: "Описание доски",
     boardCategory: "Категория",
+    boardTagsLabel: "Теги доски",
+    boardStrategyLabel: "Контент-стратегия",
     publishToPinterest: "Опубликовать в Pinterest",
     pinterestComingSoon: "Интеграция с Pinterest — скоро",
+
+    accountSetupTitle: "Настройка аккаунта Pinterest",
+    accountSetupDesc: "Рекомендации для вашего профиля Pinterest на основе ниши",
+    accountNicheLabel: "Рекомендуемая ниша",
+    accountNameLabel: "Имя профиля",
+    accountBioLabel: "Био профиля",
   },
   en: {
     settings: "Settings",
@@ -282,8 +299,16 @@ const translations = {
     boardName: "Board name",
     boardDescription: "Board description",
     boardCategory: "Category",
+    boardTagsLabel: "Board tags",
+    boardStrategyLabel: "Content strategy",
     publishToPinterest: "Publish to Pinterest",
     pinterestComingSoon: "Pinterest integration — coming soon",
+
+    accountSetupTitle: "Pinterest Account Setup",
+    accountSetupDesc: "Recommendations for your Pinterest profile based on the niche",
+    accountNicheLabel: "Recommended niche",
+    accountNameLabel: "Profile name",
+    accountBioLabel: "Profile bio",
   },
 } as const;
 

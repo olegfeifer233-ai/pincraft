@@ -5,6 +5,7 @@ import { TopicForm } from "@/components/TopicForm";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { PinContent } from "@/components/PinContent";
 import { PinImage } from "@/components/PinImage";
+import { AccountSetup } from "@/components/AccountSetup";
 import { BoardCard } from "@/components/BoardCard";
 import { StepIndicator } from "@/components/StepIndicator";
 import { useLocale } from "@/components/LocaleProvider";
@@ -22,6 +23,12 @@ interface AnalysisData {
   seasonality: string;
   recommendedBoardName: string;
   recommendedBoardDescription: string;
+  boardCategory?: string;
+  boardTags?: string[];
+  boardStrategy?: string;
+  accountNiche?: string;
+  accountName?: string;
+  accountBio?: string;
 }
 
 interface PinVariation {
@@ -206,6 +213,14 @@ export default function Home() {
 
         {analysis && <AnalysisReport analysis={analysis} />}
 
+        {analysis && analysis.accountName && (
+          <AccountSetup
+            accountNiche={analysis.accountNiche ?? ""}
+            accountName={analysis.accountName}
+            accountBio={analysis.accountBio ?? ""}
+          />
+        )}
+
         {pinContent && <PinContent pinContent={pinContent} />}
 
         {(imageDataUrl || isImageGenerating) && (
@@ -220,6 +235,9 @@ export default function Home() {
           <BoardCard
             boardName={analysis.recommendedBoardName}
             boardDescription={analysis.recommendedBoardDescription}
+            boardCategory={analysis.boardCategory}
+            boardTags={analysis.boardTags}
+            boardStrategy={analysis.boardStrategy}
           />
         )}
       </div>

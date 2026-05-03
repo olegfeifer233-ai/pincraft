@@ -49,7 +49,28 @@ async function generateWithGemini(
   apiKey: string,
   prompt: string
 ): Promise<{ dataUrl: string; mimeType: string }> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+  const models = ["gemini-2.5-flash-image", "gemini-2.0-flash-exp"];
+
+  for (const model of models) {
+    try {
+      return await tryGeminiModel(apiKey, model, prompt);
+    } catch (err) {
+      const is404 = err instanceof Error && (err.message.includes("404") || err.message.includes("not found"));
+      const is429 = err instanceof Error && err.message.includes("429");
+      if ((is404 || is429) && model !== models[models.length - 1]) continue;
+      throw err;
+    }
+  }
+
+  throw new Error("All Gemini image models failed");
+}
+
+async function tryGeminiModel(
+  apiKey: string,
+  model: string,
+  prompt: string
+): Promise<{ dataUrl: string; mimeType: string }> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
     method: "POST",
