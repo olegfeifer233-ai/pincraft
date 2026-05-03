@@ -24,52 +24,37 @@ export async function POST(request: NextRequest) {
       ? `\nThe user has a website/shop: ${websiteUrl}\nAnalyze this URL to understand the brand, products, and target audience. The Pinterest account should be optimized to drive traffic to this website. The account name and bio should create a clear connection between the Pinterest profile and this website/shop.`
       : "";
 
-    const prompt = `You are a Pinterest marketing expert specializing in business account optimization.
+    const prompt = `You are a Pinterest marketing expert. Analyze this SPECIFIC niche and give CONCRETE, DATA-DRIVEN recommendations.
 
-A user wants to create a Pinterest business account for the following niche/topic: "${niche.trim()}"${websiteContext}
+Niche/Topic: "${niche.trim()}"${websiteContext}
 
-Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+CRITICAL RULES:
+- Do NOT use generic phrases like "ist sehr beliebt" or "bietet großes Potenzial" or "is very popular"
+- Every recommendation must be SPECIFIC to "${niche.trim()}" — mention real sub-niches, actual trends, concrete numbers
+- nicheAnalysis must include: specific monthly search volume estimates on Pinterest, name 2-3 top competing accounts in this niche, explain what makes this niche unique vs similar niches
+- contentStrategy must include: exact posting schedule (e.g. "3 pins daily at 8pm"), specific pin formats that work for THIS niche, concrete content ideas unique to this topic
+- Board names must be creative and SEO-optimized, not generic
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
 
 {
-  "accountName": "Suggested Pinterest display name — professional, memorable, includes niche keyword, max 30 characters. Should clearly communicate what the account is about.",
-  "username": "Suggested Pinterest username (handle) — lowercase, no spaces, use dots or underscores if needed. Short and brandable.",
-  "accountBio": "SEO-optimized Pinterest bio (max 500 characters). Should include: what the account offers, target keywords, call to action, and connection to website if provided. Write in a friendly, professional tone.",
-  "accountCategory": "The Pinterest business category that best fits (e.g., Home Decor, Fashion, Food & Drink, Health & Wellness, DIY & Crafts, Education, Technology, etc.)",
-  "profileKeywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "nicheAnalysis": "Detailed analysis of this niche on Pinterest: how popular it is, what type of content performs best, the competition level, and the growth potential (3-4 sentences).",
-  "contentStrategy": "Content strategy recommendations: what types of pins to create, posting frequency, best times to post, ratio of own content vs repins, how to use idea pins and video pins (3-4 sentences).",
+  "accountName": "Creative display name with niche keyword, max 30 chars",
+  "username": "lowercase handle, no spaces, brandable",
+  "accountBio": "SEO bio max 500 chars: what you offer, keywords, call to action, website connection",
+  "accountCategory": "Exact Pinterest business category",
+  "profileKeywords": ["5 specific long-tail keywords for this exact niche"],
+  "nicheAnalysis": "SPECIFIC analysis: estimated Pinterest search volume for key terms, name 2-3 top competing accounts, what content format dominates (infographics/photos/videos), unique positioning opportunities, competition level with reasoning (4-5 sentences, NO generic statements)",
+  "contentStrategy": "SPECIFIC strategy: exact daily pin count, best posting times for THIS audience, which pin formats (standard/idea/video) work best here, specific content ideas unique to this niche, own content vs repin ratio with reasoning (4-5 sentences)",
   "boardSuggestions": [
-    {
-      "name": "Board name 1 — main board directly related to the niche",
-      "description": "SEO-optimized board description with keywords"
-    },
-    {
-      "name": "Board name 2 — related supporting topic",
-      "description": "SEO-optimized board description"
-    },
-    {
-      "name": "Board name 3 — broader related topic for audience expansion",
-      "description": "SEO-optimized board description"
-    },
-    {
-      "name": "Board name 4 — trending/seasonal related topic",
-      "description": "SEO-optimized board description"
-    },
-    {
-      "name": "Board name 5 — inspiration/lifestyle board",
-      "description": "SEO-optimized board description"
-    }
+    {"name": "Main board — core niche topic", "description": "SEO description with keywords"},
+    {"name": "Supporting sub-niche board", "description": "SEO description"},
+    {"name": "Broader audience expansion board", "description": "SEO description"},
+    {"name": "Trending/seasonal board for this niche", "description": "SEO description"},
+    {"name": "Lifestyle/inspiration board", "description": "SEO description"}
   ],
-  "websiteIntegration": "Tips for connecting the Pinterest account with the website: how to claim the website, add Save buttons, use Rich Pins, and drive traffic (2-3 sentences). If no website was provided, give general tips for future website integration.",
-  "growthTips": ["Actionable tip 1 for growing the account", "Actionable tip 2", "Actionable tip 3", "Actionable tip 4", "Actionable tip 5"]
-}
-
-Important:
-- Account name must be catchy yet professional and include a niche keyword
-- Bio must be SEO-optimized with natural keyword placement
-- Board suggestions should cover the niche comprehensively
-- All recommendations should follow Pinterest's best practices for business accounts
-- If a website URL is provided, all recommendations should be aligned with that brand`;
+  "websiteIntegration": "Specific steps: claim website, Rich Pins setup, Save button placement, traffic strategy (3 sentences)",
+  "growthTips": ["5 actionable tips specific to THIS niche — not generic Pinterest advice"]
+}`;
 
     const raw = await callAI(prompt, { apiKey, provider });
     const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
