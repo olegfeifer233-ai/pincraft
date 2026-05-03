@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   UserCircle, Globe, Sparkles, Copy, Check, Layout, TrendingUp,
-  LinkIcon, Lightbulb, Search
+  LinkIcon, Lightbulb, Search, ImageIcon, ArrowRight
 } from "lucide-react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
@@ -339,6 +340,23 @@ export default function AccountPage() {
             )}
           </>
         )}
+
+        {/* Cross-link to pin creation */}
+        <Link
+          href="/"
+          className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-5 hover:shadow-md transition-shadow group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <ImageIcon className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{t(locale, "pinBannerTitle")}</p>
+              <p className="text-xs text-muted">{t(locale, "pinBannerDesc")}</p>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
     </div>
   );

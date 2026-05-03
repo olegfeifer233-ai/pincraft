@@ -136,6 +136,10 @@ const translations = {
     suggestedBoardsDesc: "Start-Boards für Ihren Pinterest-Auftritt",
     websiteIntegrationLabel: "Website-Integration",
     growthTipsLabel: "Wachstumstipps",
+    accountBannerTitle: "Pinterest-Konto noch nicht eingerichtet?",
+    accountBannerDesc: "Wir helfen Ihnen, das perfekte Profil f\u00fcr Ihre Nische zu erstellen",
+    pinBannerTitle: "Bereit, Pins zu erstellen?",
+    pinBannerDesc: "SEO-optimierte Pins mit KI-generierten Bildern erstellen",
   },
   ru: {
     settings: "Настройки",
@@ -253,6 +257,10 @@ const translations = {
     suggestedBoardsDesc: "Стартовые доски для вашего Pinterest",
     websiteIntegrationLabel: "Интеграция с сайтом",
     growthTipsLabel: "Советы по росту",
+    accountBannerTitle: "Ещё нет Pinterest-аккаунта?",
+    accountBannerDesc: "Поможем создать идеальный профиль для вашей ниши",
+    pinBannerTitle: "Готовы создавать пины?",
+    pinBannerDesc: "SEO-оптимизированные пины с AI-картинками",
   },
   en: {
     settings: "Settings",
@@ -370,6 +378,10 @@ const translations = {
     suggestedBoardsDesc: "Starter boards for your Pinterest presence",
     websiteIntegrationLabel: "Website integration",
     growthTipsLabel: "Growth tips",
+    accountBannerTitle: "Don't have a Pinterest account yet?",
+    accountBannerDesc: "We'll help you create the perfect profile for your niche",
+    pinBannerTitle: "Ready to create pins?",
+    pinBannerDesc: "Create SEO-optimized pins with AI-generated images",
   },
 } as const;
 

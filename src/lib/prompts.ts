@@ -1,38 +1,33 @@
 export function buildAnalyzePrompt(topic: string, language: string): string {
   const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
-  return `You are a Pinterest SEO expert. Analyze the following topic for Pinterest pin creation.
+  return `You are a Pinterest SEO data analyst. Provide a SPECIFIC, DATA-DRIVEN analysis for pin creation.
 
 Topic: "${topic}"
 
-Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+CRITICAL RULES:
+- Do NOT use generic filler phrases like "is very popular", "has great potential", "ist sehr beliebt", "bietet großes Potenzial"
+- topicSummary must contain SPECIFIC insights: estimated monthly searches, what angle/sub-niche is underserved, why THIS topic works on Pinterest specifically (not just "it's visual")
+- targetAudience must name specific demographics with ages, interests, and behaviors — not vague "people interested in X"
+- seasonality must cite specific months or events, not just "has seasonal variation"
+- boardStrategy must include exact numbers: daily pin count, specific ratio (e.g. "70% own, 30% repins"), recommended starting pins count
+- competitionLevel must be justified with reasoning
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
 
 {
-  "topicSummary": "Brief summary of the topic and its Pinterest potential (2-3 sentences)",
-  "mainKeywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "longTailKeywords": ["long tail phrase 1", "long tail phrase 2", "long tail phrase 3", "long tail phrase 4", "long tail phrase 5"],
-  "trendingRelated": ["trending related topic 1", "trending related topic 2", "trending related topic 3"],
-  "targetAudience": "Who would search for this on Pinterest (1-2 sentences)",
+  "topicSummary": "SPECIFIC analysis: estimated Pinterest search volume, what sub-niche angle is underserved, why this works on Pinterest specifically (2-3 sentences, NO generic filler)",
+  "mainKeywords": ["5 actual high-volume Pinterest search terms"],
+  "longTailKeywords": ["5 specific 3-5 word phrases people actually search on Pinterest"],
+  "trendingRelated": ["3 currently trending related topics on Pinterest"],
+  "targetAudience": "Specific demographics: age range, gender split, interests, buying behavior, platform usage patterns (2 sentences)",
   "competitionLevel": "low" | "medium" | "high",
-  "seasonality": "Description of whether this topic has seasonal peaks",
-  "recommendedBoardName": "Suggested Pinterest board name optimized for SEO",
-  "recommendedBoardDescription": "SEO-optimized board description (2-3 sentences with keywords naturally included)",
-  "boardCategory": "The Pinterest category that best fits this topic (e.g. Home Decor, Fashion, Food & Drink, DIY & Crafts, etc.)",
+  "seasonality": "Specific months/events when this peaks, with relative search increase estimate",
+  "recommendedBoardName": "Creative, SEO-optimized board name",
+  "recommendedBoardDescription": "SEO board description with natural keywords (2-3 sentences)",
+  "boardCategory": "Exact Pinterest category",
   "boardTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-  "boardStrategy": "Content strategy for this board: how often to pin, what types of content to mix (own pins vs repins), recommended number of pins to start with, and tips for board growth (2-3 sentences)",
-  "accountNiche": "Recommended niche positioning for a Pinterest account focused on this topic (1-2 sentences)",
-  "accountName": "Suggested Pinterest account/display name optimized for this niche (catchy, professional, includes niche keyword)",
-  "accountBio": "Suggested Pinterest bio/about text optimized for SEO and niche positioning (2-3 sentences, includes keywords, call to action)"
-}
-
-Important:
-- Keywords should be actual Pinterest search terms people use
-- Long-tail keywords should be 3-5 words each
-- Board name should be catchy but keyword-rich
-- Board tags should be single words or short phrases relevant to the topic
-- Board strategy should be actionable and specific
-- Account name should be memorable and niche-specific
-- Account bio should include keywords naturally and explain what the account offers
-- All text must be optimized for Pinterest search algorithm`;
+  "boardStrategy": "SPECIFIC strategy with numbers: exact daily pin count, own/repin ratio, starting pin count, posting times for this audience (2-3 sentences)"
+}`;
 }
 
 export function buildGeneratePrompt(

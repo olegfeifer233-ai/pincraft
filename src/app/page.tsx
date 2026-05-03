@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
+import { UserCircle, ArrowRight } from "lucide-react";
 import { TopicForm } from "@/components/TopicForm";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { PinContent } from "@/components/PinContent";
@@ -229,6 +231,23 @@ export default function Home() {
             onRegenerate={handleRegenerate}
           />
         )}
+
+        {/* Cross-link to /account */}
+        <Link
+          href="/account"
+          className="flex items-center justify-between bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl border border-red-100 p-5 hover:shadow-md transition-shadow group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+              <UserCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{t(locale, "accountBannerTitle")}</p>
+              <p className="text-xs text-muted">{t(locale, "accountBannerDesc")}</p>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-red-400 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
     </div>
   );
