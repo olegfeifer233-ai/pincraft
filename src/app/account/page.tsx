@@ -52,7 +52,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function getStoredSettings(): { apiKey?: string; provider?: string } {
+function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string; apiKey?: string; provider?: string } {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem("pincraft_settings");
@@ -87,8 +87,8 @@ export default function AccountPage() {
           niche: niche.trim(),
           websiteUrl: websiteUrl.trim() || undefined,
           language: locale,
-          apiKey: settings.apiKey || undefined,
-          provider: settings.provider || undefined,
+          geminiKey: settings.geminiKey || undefined,
+          groqKey: settings.groqKey || undefined,
         }),
       });
       const data = await res.json();

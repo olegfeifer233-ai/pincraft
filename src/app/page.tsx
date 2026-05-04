@@ -50,7 +50,7 @@ interface PinContentData {
   pinVariations: PinVariation[];
 }
 
-function getStoredSettings(): { apiKey?: string; provider?: string } {
+function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string; apiKey?: string; provider?: string } {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem("pincraft_settings");
@@ -84,8 +84,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          apiKey: settings.apiKey || undefined,
-          provider: settings.provider || undefined,
+          geminiKey: settings.geminiKey || undefined,
+          togetherKey: settings.togetherKey || undefined,
         }),
       });
       const data = await res.json();
@@ -120,8 +120,8 @@ export default function Home() {
           topic: topic.trim(),
           websiteUrl: websiteUrl.trim() || undefined,
           language,
-          apiKey: settings.apiKey || undefined,
-          provider: settings.provider || undefined,
+          geminiKey: settings.geminiKey || undefined,
+          groqKey: settings.groqKey || undefined,
         }),
       });
       const analyzeData = await analyzeRes.json();
@@ -153,8 +153,8 @@ export default function Home() {
           websiteUrl: websiteUrl.trim() || undefined,
           keywords,
           language,
-          apiKey: settings.apiKey || undefined,
-          provider: settings.provider || undefined,
+          geminiKey: settings.geminiKey || undefined,
+          groqKey: settings.groqKey || undefined,
         }),
       });
       const generateData = await generateRes.json();

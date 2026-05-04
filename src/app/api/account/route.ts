@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
-import { callAI, AIProvider } from "@/lib/ai";
+import { callAI } from "@/lib/ai";
 import { scrapeWebsite } from "@/lib/scraper";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { niche, websiteUrl, language = "de", apiKey, provider } = body as {
+    const { niche, websiteUrl, language = "de", geminiKey, groqKey } = body as {
       niche: string;
       websiteUrl?: string;
       language?: string;
-      apiKey?: string;
-      provider?: AIProvider;
+      geminiKey?: string;
+      groqKey?: string;
     };
 
     if (!niche || typeof niche !== "string" || niche.trim().length === 0) {
@@ -60,7 +60,7 @@ Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JS
   "growthTips": ["5 actionable tips specific to THIS niche — not generic Pinterest advice"]
 }`;
 
-    const raw = await callAI(prompt, { apiKey, provider });
+    const raw = await callAI(prompt, { geminiKey, groqKey });
     const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const accountData = JSON.parse(jsonStr);
 

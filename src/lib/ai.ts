@@ -2,46 +2,47 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export type AIProvider = "gemini" | "groq";
 
-interface AIConfig {
-  provider: AIProvider;
-  apiKey: string;
-}
-
-function getConfig(customApiKey?: string, customProvider?: AIProvider): AIConfig {
-  if (customApiKey && customProvider) {
-    return { provider: customProvider, apiKey: customApiKey };
-  }
-
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey) {
-    return { provider: "gemini", apiKey: geminiKey };
-  }
-
-  const groqKey = process.env.GROQ_API_KEY;
-  if (groqKey) {
-    return { provider: "groq", apiKey: groqKey };
-  }
-
-  throw new Error(
-    "No AI API key configured. Set GEMINI_API_KEY or GROQ_API_KEY in environment, or provide your own key in Settings."
-  );
+interface CallAIOptions {
+  geminiKey?: string;
+  groqKey?: string;
+  // Legacy fields for backward compat
+  apiKey?: string;
+  provider?: AIProvider;
 }
 
 export async function callAI(
   prompt: string,
-  options?: { apiKey?: string; provider?: AIProvider }
+  options?: CallAIOptions
 ): Promise<string> {
-  const config = getConfig(options?.apiKey, options?.provider);
+  const geminiKey = options?.geminiKey || (options?.provider === "gemini" ? options?.apiKey : undefined) || process.env.GEMINI_API_KEY;
+  const groqKey = options?.groqKey || (options?.provider === "groq" ? options?.apiKey : undefined) || process.env.GROQ_API_KEY;
 
-  if (config.provider === "gemini") {
-    return callGemini(config.apiKey, prompt);
+  let lastError: Error | null = null;
+
+  // Try Gemini first
+  if (geminiKey) {
+    try {
+      return await callGemini(geminiKey, prompt);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.error("Gemini text failed, trying Groq fallback:", lastError.message);
+    }
   }
 
-  if (config.provider === "groq") {
-    return callGroq(config.apiKey, prompt);
+  // Fallback to Groq
+  if (groqKey) {
+    try {
+      return await callGroq(groqKey, prompt);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
   }
 
-  throw new Error(`Unknown provider: ${config.provider}`);
+  if (lastError) throw lastError;
+
+  throw new Error(
+    "No AI API key configured. Set GEMINI_API_KEY or GROQ_API_KEY in environment, or provide your own key in Settings."
+  );
 }
 
 async function callGemini(apiKey: string, prompt: string): Promise<string> {

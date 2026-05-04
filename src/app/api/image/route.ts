@@ -3,10 +3,10 @@ import { NextRequest } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, apiKey, provider } = body as {
+    const { prompt, geminiKey: userGeminiKey, togetherKey: userTogetherKey } = body as {
       prompt: string;
-      apiKey?: string;
-      provider?: string;
+      geminiKey?: string;
+      togetherKey?: string;
     };
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
     const pinterestPrompt = `Create a vertical Pinterest pin image (2:3 aspect ratio). ${prompt.trim()}. The image should be visually striking, high quality, and designed to get saves and clicks on Pinterest. No text or letters in the image.`;
 
     // Try Gemini Imagen first, then Together.ai FLUX
-    const geminiKey = apiKey && provider === "gemini" ? apiKey : process.env.GEMINI_API_KEY;
-    const togetherKey = process.env.TOGETHER_API_KEY;
+    const geminiKey = userGeminiKey || process.env.GEMINI_API_KEY;
+    const togetherKey = userTogetherKey || process.env.TOGETHER_API_KEY;
 
     let lastError: string | null = null;
 
