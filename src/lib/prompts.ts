@@ -1,40 +1,61 @@
-export function buildAnalyzePrompt(topic: string, language: string): string {
-  return `You are a Pinterest SEO expert. Analyze the following topic for Pinterest pin creation.
+export function buildAnalyzePrompt(topic: string, language: string, websiteUrl?: string, websiteContent?: string): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  let websiteContext = "";
+  if (websiteUrl && websiteContent) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nACTUAL website content:\n---\n${websiteContent}\n---\nUse this real content to understand the brand, products, and visual style. All recommendations should be optimized to drive traffic from Pinterest to this website. Use the website's actual content themes, products, and services to inform the pin strategy.`;
+  } else if (websiteUrl) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nAnalyze based on the URL. All recommendations should be optimized to drive traffic from Pinterest to this website.`;
+  }
+  return `You are a Pinterest SEO data analyst. Provide a SPECIFIC, DATA-DRIVEN analysis for pin creation.
 
-Topic: "${topic}"
+Topic: "${topic}"${websiteContext}
 
-Respond in ${language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+CRITICAL RULES:
+- Do NOT use generic filler phrases like "is very popular", "has great potential", "ist sehr beliebt", "bietet großes Potenzial"
+- topicSummary must contain SPECIFIC insights: estimated monthly searches, what angle/sub-niche is underserved, why THIS topic works on Pinterest specifically (not just "it's visual")
+- targetAudience must name specific demographics with ages, interests, and behaviors — not vague "people interested in X"
+- seasonality must cite specific months or events, not just "has seasonal variation"
+- boardStrategy must include exact numbers: daily pin count, specific ratio (e.g. "70% own, 30% repins"), recommended starting pins count
+- competitionLevel must be justified with reasoning
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
 
 {
-  "topicSummary": "Brief summary of the topic and its Pinterest potential (2-3 sentences)",
-  "mainKeywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "longTailKeywords": ["long tail phrase 1", "long tail phrase 2", "long tail phrase 3", "long tail phrase 4", "long tail phrase 5"],
-  "trendingRelated": ["trending related topic 1", "trending related topic 2", "trending related topic 3"],
-  "targetAudience": "Who would search for this on Pinterest (1-2 sentences)",
+  "topicSummary": "SPECIFIC analysis: estimated Pinterest search volume, what sub-niche angle is underserved, why this works on Pinterest specifically (2-3 sentences, NO generic filler)",
+  "mainKeywords": ["5 actual high-volume Pinterest search terms"],
+  "longTailKeywords": ["5 specific 3-5 word phrases people actually search on Pinterest"],
+  "trendingRelated": ["3 currently trending related topics on Pinterest"],
+  "targetAudience": "Specific demographics: age range, gender split, interests, buying behavior, platform usage patterns (2 sentences)",
   "competitionLevel": "low" | "medium" | "high",
-  "seasonality": "Description of whether this topic has seasonal peaks",
-  "recommendedBoardName": "Suggested Pinterest board name optimized for SEO",
-  "recommendedBoardDescription": "SEO-optimized board description (2-3 sentences with keywords naturally included)"
-}
-
-Important:
-- Keywords should be actual Pinterest search terms people use
-- Long-tail keywords should be 3-5 words each
-- Board name should be catchy but keyword-rich
-- All text must be optimized for Pinterest search algorithm`;
+  "seasonality": "Specific months/events when this peaks, with relative search increase estimate",
+  "recommendedBoardName": "Creative, SEO-optimized board name",
+  "recommendedBoardDescription": "SEO board description with natural keywords (2-3 sentences)",
+  "boardCategory": "Exact Pinterest category",
+  "boardTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+  "boardStrategy": "SPECIFIC strategy with numbers: exact daily pin count, own/repin ratio, starting pin count, posting times for this audience (2-3 sentences)"
+}`;
 }
 
 export function buildGeneratePrompt(
   topic: string,
   keywords: string[],
-  language: string
+  language: string,
+  websiteUrl?: string,
+  websiteContent?: string
 ): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  let websiteContext = "";
+  if (websiteUrl && websiteContent) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nACTUAL website content:\n---\n${websiteContent}\n---\nThe pin should drive traffic to this website. Use the real content above to match the brand's tone, style, and messaging. The image style should match the website's brand aesthetic. The call to action should encourage visiting the website.`;
+  } else if (websiteUrl) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nThe pin should drive traffic to this website. The call to action should encourage visiting the website.`;
+  }
   return `You are a Pinterest content creation expert specializing in SEO-optimized pins.
 
-Topic: "${topic}"
+Topic: "${topic}"${websiteContext}
 SEO Keywords: ${keywords.join(", ")}
 
-Respond in ${language === "ru" ? "Russian" : "English"} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON) with this exact structure:
 
 {
   "pinTitle": "SEO-optimized pin title (max 100 characters, must include primary keyword)",
@@ -65,4 +86,81 @@ Important:
 - Hashtags should mix popular and niche tags
 - Image prompt should be detailed enough for DALL-E/Midjourney/Flux to generate a stunning pin
 - Text overlay should be bold and attention-grabbing`;
+}
+
+export function buildBatchPrompt(
+  topic: string,
+  keywords: string[],
+  count: number,
+  language: string,
+  websiteUrl?: string,
+  websiteContent?: string
+): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  let websiteContext = "";
+  if (websiteUrl && websiteContent) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nACTUAL website content:\n---\n${websiteContent}\n---\nAll pins should drive traffic to this website.`;
+  } else if (websiteUrl) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nAll pins should drive traffic to this website.`;
+  }
+  return `You are a Pinterest content creation expert. Generate ${count} UNIQUE pin variations for the same topic. Each pin should have a completely different angle, style, and approach.
+
+Topic: "${topic}"${websiteContext}
+SEO Keywords: ${keywords.join(", ")}
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
+
+{
+  "pins": [
+    {
+      "pinTitle": "SEO-optimized title (max 100 chars, unique angle)",
+      "pinDescription": "SEO description (150-500 chars, unique approach)",
+      "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"],
+      "imagePrompt": "Detailed AI image prompt, vertical 2:3 ratio, completely different visual style from other pins",
+      "imageStyle": "photorealistic" | "illustration" | "flat-design" | "watercolor" | "minimalist" | "3d-render",
+      "suggestedTextOverlay": "Short text overlay (3-7 words)",
+      "altText": "Accessible alt text"
+    }
+  ]
+}
+
+CRITICAL: Each pin must have a DIFFERENT angle on the topic. Vary the visual style, the emotional appeal, and the target sub-audience. Do NOT create ${count} copies with minor word changes.`;
+}
+
+export function buildABTestPrompt(
+  topic: string,
+  keywords: string[],
+  language: string
+): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  return `You are a Pinterest SEO analyst specializing in A/B testing pin titles.
+
+Topic: "${topic}"
+SEO Keywords: ${keywords.join(", ")}
+
+Generate 4 title variations with detailed analysis. Each title should use a DIFFERENT psychological approach.
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
+
+{
+  "variants": [
+    {
+      "title": "Pin title variation (max 100 chars)",
+      "approach": "curiosity" | "benefit" | "urgency" | "social-proof",
+      "seoScore": 85,
+      "keywordDensity": "high" | "medium" | "low",
+      "emotionalAppeal": "high" | "medium" | "low",
+      "clickPotential": "high" | "medium" | "low",
+      "reasoning": "Brief 1-sentence explanation of why this title works"
+    }
+  ]
+}
+
+Approaches:
+- curiosity: Makes user want to click to learn more
+- benefit: Clearly states what the user will get
+- urgency: Creates FOMO or time-pressure
+- social-proof: Uses numbers, statistics, or popularity signals
+
+The seoScore (0-100) should reflect keyword placement, length, and search intent match. Be honest — not all variants should score 90+.`;
 }

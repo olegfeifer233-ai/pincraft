@@ -2,53 +2,67 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export type AIProvider = "gemini" | "groq";
 
-interface AIConfig {
-  provider: AIProvider;
-  apiKey: string;
+interface CallAIOptions {
+  geminiKey?: string;
+  groqKey?: string;
+  // Legacy fields for backward compat
+  apiKey?: string;
+  provider?: AIProvider;
 }
 
-function getConfig(customApiKey?: string, customProvider?: AIProvider): AIConfig {
-  if (customApiKey && customProvider) {
-    return { provider: customProvider, apiKey: customApiKey };
-  }
+export async function callAI(
+  prompt: string,
+  options?: CallAIOptions
+): Promise<string> {
+  const geminiKey = options?.geminiKey || (options?.provider === "gemini" ? options?.apiKey : undefined) || process.env.GEMINI_API_KEY;
+  const groqKey = options?.groqKey || (options?.provider === "groq" ? options?.apiKey : undefined) || process.env.GROQ_API_KEY;
 
-  const geminiKey = process.env.GEMINI_API_KEY;
+  let lastError: Error | null = null;
+
+  // Try Gemini first
   if (geminiKey) {
-    return { provider: "gemini", apiKey: geminiKey };
+    try {
+      return await callGemini(geminiKey, prompt);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.error("Gemini text failed, trying Groq fallback:", lastError.message);
+    }
   }
 
-  const groqKey = process.env.GROQ_API_KEY;
+  // Fallback to Groq
   if (groqKey) {
-    return { provider: "groq", apiKey: groqKey };
+    try {
+      return await callGroq(groqKey, prompt);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
   }
+
+  if (lastError) throw lastError;
 
   throw new Error(
     "No AI API key configured. Set GEMINI_API_KEY or GROQ_API_KEY in environment, or provide your own key in Settings."
   );
 }
 
-export async function callAI(
-  prompt: string,
-  options?: { apiKey?: string; provider?: AIProvider }
-): Promise<string> {
-  const config = getConfig(options?.apiKey, options?.provider);
-
-  if (config.provider === "gemini") {
-    return callGemini(config.apiKey, prompt);
-  }
-
-  if (config.provider === "groq") {
-    return callGroq(config.apiKey, prompt);
-  }
-
-  throw new Error(`Unknown provider: ${config.provider}`);
-}
-
 async function callGemini(apiKey: string, prompt: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"];
+
+  for (const modelName of models) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    } catch (err) {
+      const is429 = err instanceof Error && err.message.includes("429");
+      const isLast = modelName === models[models.length - 1];
+      if (is429 && !isLast) continue;
+      throw err;
+    }
+  }
+
+  throw new Error("All Gemini models failed");
 }
 
 async function callGroq(apiKey: string, prompt: string): Promise<string> {

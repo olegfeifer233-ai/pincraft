@@ -1,15 +1,17 @@
 import { NextRequest } from "next/server";
-import { callAI, AIProvider } from "@/lib/ai";
+import { callAI } from "@/lib/ai";
 import { buildAnalyzePrompt } from "@/lib/prompts";
+import { scrapeWebsite } from "@/lib/scraper";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topic, language = "ru", apiKey, provider } = body as {
+    const { topic, websiteUrl, language = "ru", geminiKey, groqKey } = body as {
       topic: string;
+      websiteUrl?: string;
       language?: string;
-      apiKey?: string;
-      provider?: AIProvider;
+      geminiKey?: string;
+      groqKey?: string;
     };
 
     if (!topic || typeof topic !== "string" || topic.trim().length === 0) {
@@ -19,8 +21,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildAnalyzePrompt(topic.trim(), language);
-    const raw = await callAI(prompt, { apiKey, provider });
+    let websiteContent: string | undefined;
+    if (websiteUrl) {
+      websiteContent = await scrapeWebsite(websiteUrl);
+    }
+
+    const prompt = buildAnalyzePrompt(topic.trim(), language, websiteUrl, websiteContent);
+    const raw = await callAI(prompt, { geminiKey, groqKey });
 
     const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const analysis = JSON.parse(jsonStr);

@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
+import { UserCircle, ArrowRight } from "lucide-react";
 import { TopicForm } from "@/components/TopicForm";
 import { AnalysisReport } from "@/components/AnalysisReport";
 import { PinContent } from "@/components/PinContent";
+import { PinImage } from "@/components/PinImage";
+import { BoardCard } from "@/components/BoardCard";
 import { StepIndicator } from "@/components/StepIndicator";
+import { ABTestCard } from "@/components/ABTestCard";
+import { BatchPins } from "@/components/BatchPins";
+import { Scheduler } from "@/components/Scheduler";
+import { ImageTemplates } from "@/components/ImageTemplates";
+import { useLocale } from "@/components/LocaleProvider";
+import { t } from "@/lib/i18n";
 
-type Step = "idle" | "analyzing" | "analyzed" | "generating" | "done";
+type Step = "idle" | "analyzing" | "analyzed" | "generating" | "generatingImage" | "done";
 
 interface AnalysisData {
   topicSummary: string;
@@ -18,6 +28,12 @@ interface AnalysisData {
   seasonality: string;
   recommendedBoardName: string;
   recommendedBoardDescription: string;
+  boardCategory?: string;
+  boardTags?: string[];
+  boardStrategy?: string;
+  accountNiche?: string;
+  accountName?: string;
+  accountBio?: string;
 }
 
 interface PinVariation {
@@ -38,7 +54,7 @@ interface PinContentData {
   pinVariations: PinVariation[];
 }
 
-function getStoredSettings(): { apiKey?: string; provider?: string } {
+function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string; apiKey?: string; provider?: string } {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem("pincraft_settings");
@@ -51,18 +67,49 @@ function getStoredSettings(): { apiKey?: string; provider?: string } {
 
 export default function Home() {
   const [topic, setTopic] = useState("");
-  const [language, setLanguage] = useState("ru");
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [step, setStep] = useState<Step>("idle");
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [pinContent, setPinContent] = useState<PinContentData | null>(null);
+  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
+  const [isImageGenerating, setIsImageGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const analysisRef = useRef<AnalysisData | null>(null);
+  const pinContentRef = useRef<PinContentData | null>(null);
+  const { locale } = useLocale();
+  const language = locale;
+
+  const generateImage = async (prompt: string) => {
+    const settings = getStoredSettings();
+    setIsImageGenerating(true);
+    try {
+      const res = await fetch("/api/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          geminiKey: settings.geminiKey || undefined,
+          togetherKey: settings.togetherKey || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setImageDataUrl(data.image.dataUrl);
+    } catch (err) {
+      console.error("Image generation error:", err);
+      setError(err instanceof Error ? err.message : t(locale, "errorImage"));
+    } finally {
+      setIsImageGenerating(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(null);
     setAnalysis(null);
     setPinContent(null);
+    setImageDataUrl(null);
     analysisRef.current = null;
+    pinContentRef.current = null;
 
     const settings = getStoredSettings();
 
@@ -75,9 +122,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: topic.trim(),
+          websiteUrl: websiteUrl.trim() || undefined,
           language,
-          apiKey: settings.apiKey || undefined,
-          provider: settings.provider || undefined,
+          geminiKey: settings.geminiKey || undefined,
+          groqKey: settings.groqKey || undefined,
         }),
       });
       const analyzeData = await analyzeRes.json();
@@ -87,13 +135,14 @@ export default function Home() {
       setAnalysis(analysisResult);
       setStep("analyzed");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка при анализе");
+      setError(err instanceof Error ? err.message : t(locale, "errorAnalysis"));
       setStep("idle");
       return;
     }
 
     // Step 2: Generate pin content using analysis result directly
     setStep("generating");
+    let pinContentResult: PinContentData;
     try {
       const keywords = [
         ...analysisResult.mainKeywords,
@@ -105,23 +154,51 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic: topic.trim(),
+          websiteUrl: websiteUrl.trim() || undefined,
           keywords,
           language,
-          apiKey: settings.apiKey || undefined,
-          provider: settings.provider || undefined,
+          geminiKey: settings.geminiKey || undefined,
+          groqKey: settings.groqKey || undefined,
         }),
       });
       const generateData = await generateRes.json();
       if (!generateRes.ok) throw new Error(generateData.error);
-      setPinContent(generateData.pinContent);
-      setStep("done");
+      pinContentResult = generateData.pinContent;
+      pinContentRef.current = pinContentResult;
+      setPinContent(pinContentResult);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Ошибка при генерации контента"
+        err instanceof Error ? err.message : t(locale, "errorGeneration")
       );
       setStep("analyzed");
+      return;
+    }
+
+    // Step 3: Generate image from the image prompt
+    setStep("generatingImage");
+    await generateImage(pinContentResult.imagePrompt);
+    setStep("done");
+  };
+
+  const handleRegenerate = () => {
+    if (pinContentRef.current) {
+      setError(null);
+      setStep("generatingImage");
+      generateImage(pinContentRef.current.imagePrompt).then(() => {
+        setStep("done");
+      });
     }
   };
+
+  const handleSelectTitle = (title: string) => {
+    if (pinContent) {
+      setPinContent({ ...pinContent, pinTitle: title });
+    }
+  };
+
+  const allKeywords = analysis
+    ? [...analysis.mainKeywords, ...analysis.longTailKeywords.slice(0, 3)]
+    : [];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -130,7 +207,7 @@ export default function Home() {
           Pin<span className="text-primary">Craft</span>
         </h1>
         <p className="text-muted text-sm sm:text-base">
-          От темы до готового пина — автоматически
+          {t(locale, "subtitle")}
         </p>
       </div>
 
@@ -138,23 +215,99 @@ export default function Home() {
         <TopicForm
           topic={topic}
           setTopic={setTopic}
-          language={language}
-          setLanguage={setLanguage}
+          websiteUrl={websiteUrl}
+          setWebsiteUrl={setWebsiteUrl}
           onSubmit={handleSubmit}
-          isLoading={step === "analyzing" || step === "generating"}
+          isLoading={step === "analyzing" || step === "generating" || step === "generatingImage"}
         />
 
         <StepIndicator currentStep={step} />
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 animate-fade-in">
-            <strong>Ошибка:</strong> {error}
+            <strong>{t(locale, "errorPrefix")}:</strong> {error}
           </div>
         )}
 
         {analysis && <AnalysisReport analysis={analysis} />}
 
+        {analysis && pinContent && (
+          <BoardCard
+            boardName={analysis.recommendedBoardName}
+            boardDescription={analysis.recommendedBoardDescription}
+            boardCategory={analysis.boardCategory}
+            boardTags={analysis.boardTags}
+            boardStrategy={analysis.boardStrategy}
+            pinTitle={pinContent.pinTitle}
+            pinDescription={pinContent.pinDescription}
+            imageDataUrl={imageDataUrl ?? undefined}
+            websiteUrl={websiteUrl.trim() || undefined}
+            altText={pinContent.altText}
+          />
+        )}
+
         {pinContent && <PinContent pinContent={pinContent} />}
+
+        {/* A/B Testing for titles */}
+        {pinContent && analysis && (
+          <ABTestCard
+            topic={topic}
+            keywords={allKeywords}
+            onSelectTitle={handleSelectTitle}
+          />
+        )}
+
+        {/* Image Templates */}
+        {pinContent && (
+          <ImageTemplates
+            textOverlay={pinContent.suggestedTextOverlay}
+            onApplyTemplate={() => {/* template info stored for future canvas rendering */}}
+          />
+        )}
+
+        {(imageDataUrl || isImageGenerating) && (
+          <PinImage
+            imageDataUrl={imageDataUrl ?? ""}
+            isGenerating={isImageGenerating}
+            onRegenerate={handleRegenerate}
+          />
+        )}
+
+        {/* Scheduler */}
+        {pinContent && (
+          <Scheduler
+            pinTitle={pinContent.pinTitle}
+            pinDescription={pinContent.pinDescription}
+            imageDataUrl={imageDataUrl ?? undefined}
+            bestTimeToPost={pinContent.bestTimeToPost}
+          />
+        )}
+
+        {/* Batch Pin Generation */}
+        {analysis && pinContent && (
+          <BatchPins
+            topic={topic}
+            keywords={allKeywords}
+            websiteUrl={websiteUrl.trim() || undefined}
+          />
+        )}
+
+        {/* Cross-link to /account */}
+        <Link
+          href="/account"
+          className="flex items-center justify-between bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl border border-red-100 p-5 hover:shadow-md transition-shadow group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+              <UserCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{t(locale, "accountBannerTitle")}</p>
+              <p className="text-xs text-muted">{t(locale, "accountBannerDesc")}</p>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-red-400 group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
     </div>
   );
