@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { Save, Check, ExternalLink, Sparkles, ImageIcon, MessageSquare } from "lucide-react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import { Save, Check, ExternalLink, Sparkles, ImageIcon, MessageSquare, Link2, Unlink, Copy } from "lucide-react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
@@ -9,9 +9,15 @@ interface Settings {
   geminiKey: string;
   groqKey: string;
   togetherKey: string;
-  // Legacy fields kept for migration
   apiKey?: string;
   provider?: string;
+}
+
+interface PinterestTokens {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  expires_at: number;
 }
 
 const defaultSettings: Settings = { geminiKey: "", groqKey: "", togetherKey: "" };
@@ -31,7 +37,6 @@ function subscribe(callback: () => void): () => void {
 }
 
 function migrateSettings(raw: Record<string, string>): Settings {
-  // Migrate from old single-key format
   if (raw.apiKey && !raw.geminiKey && !raw.groqKey) {
     if (raw.provider === "groq") {
       return { geminiKey: "", groqKey: raw.apiKey, togetherKey: raw.togetherKey || "" };
@@ -43,6 +48,17 @@ function migrateSettings(raw: Record<string, string>): Settings {
     groqKey: raw.groqKey || "",
     togetherKey: raw.togetherKey || "",
   };
+}
+
+function getPinterestTokens(): PinterestTokens | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("pincraft_pinterest");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 export default function SettingsPage() {
@@ -57,7 +73,69 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<Settings>(storedSettings);
   const [saved, setSaved] = useState(false);
+  const [pinterestUser, setPinterestUser] = useState<string | null>(null);
+  const [pinterestConnecting, setPinterestConnecting] = useState(false);
+  const [callbackCopied, setCallbackCopied] = useState(false);
   const { locale } = useLocale();
+
+  const checkPinterestConnection = useCallback(async () => {
+    const tokens = getPinterestTokens();
+    if (!tokens?.access_token) {
+      setPinterestUser(null);
+      return;
+    }
+    try {
+      const res = await fetch("/api/pinterest/user", {
+        headers: { "x-pinterest-token": tokens.access_token },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPinterestUser(data.user?.username || "connected");
+      } else {
+        setPinterestUser(null);
+      }
+    } catch {
+      setPinterestUser(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async fetch sets state in callback, not synchronously
+    checkPinterestConnection();
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "pinterest_auth" && event.data?.status === "success") {
+        checkPinterestConnection();
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [checkPinterestConnection]);
+
+  const handlePinterestConnect = async () => {
+    setPinterestConnecting(true);
+    try {
+      const res = await fetch("/api/pinterest/auth");
+      const data = await res.json();
+      if (data.authUrl) {
+        const popup = window.open(data.authUrl, "pinterest_auth", "width=600,height=700");
+        const interval = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(interval);
+            setPinterestConnecting(false);
+            checkPinterestConnection();
+          }
+        }, 500);
+      }
+    } catch {
+      setPinterestConnecting(false);
+    }
+  };
+
+  const handlePinterestDisconnect = () => {
+    localStorage.removeItem("pincraft_pinterest");
+    setPinterestUser(null);
+  };
 
   const handleSave = () => {
     localStorage.setItem("pincraft_settings", JSON.stringify(settings));
@@ -71,6 +149,16 @@ export default function SettingsPage() {
     setSaved(false);
   };
 
+  const callbackUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/api/pinterest/callback`
+    : "";
+
+  const handleCopyCallback = async () => {
+    await navigator.clipboard.writeText(callbackUrl);
+    setCallbackCopied(true);
+    setTimeout(() => setCallbackCopied(false), 2000);
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="mb-8">
@@ -81,6 +169,74 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Pinterest Connection */}
+        <div className="bg-card-bg rounded-2xl border border-red-200 p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">{t(locale, "pinterestSection")}</h2>
+              <p className="text-sm text-muted">{t(locale, "pinterestSectionDesc")}</p>
+            </div>
+          </div>
+
+          {pinterestUser ? (
+            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <span className="text-sm text-green-700 font-medium">
+                {t(locale, "pinterestConnected")} @{pinterestUser}
+              </span>
+              <button
+                onClick={handlePinterestDisconnect}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 border border-red-200 transition-colors flex items-center gap-1.5"
+              >
+                <Unlink className="w-3 h-3" />
+                {t(locale, "pinterestDisconnect")}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handlePinterestConnect}
+              disabled={pinterestConnecting}
+              className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              <Link2 className="w-4 h-4" />
+              {pinterestConnecting ? t(locale, "pinterestConnecting") : t(locale, "pinterestConnect")}
+            </button>
+          )}
+
+          <div className="space-y-2 text-xs text-muted">
+            <p>{t(locale, "pinterestSetupHint")}</p>
+            {callbackUrl && (
+              <div className="space-y-1">
+                <p className="font-medium text-foreground text-xs">{t(locale, "pinterestCallbackUrl")}:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-accent rounded-lg px-3 py-2 text-xs font-mono break-all">
+                    {callbackUrl}
+                  </code>
+                  <button
+                    onClick={handleCopyCallback}
+                    className="p-2 rounded-lg hover:bg-accent text-muted hover:text-foreground transition-colors shrink-0"
+                  >
+                    {callbackCopied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+            <a
+              href="https://developers.pinterest.com/apps/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:underline"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Pinterest Developer Portal
+            </a>
+          </div>
+        </div>
+
         {/* Gemini Key */}
         <div className="bg-card-bg rounded-2xl border border-border p-6 sm:p-8 space-y-4">
           <div className="flex items-center gap-3">

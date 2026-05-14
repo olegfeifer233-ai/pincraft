@@ -9,6 +9,10 @@ import { PinContent } from "@/components/PinContent";
 import { PinImage } from "@/components/PinImage";
 import { BoardCard } from "@/components/BoardCard";
 import { StepIndicator } from "@/components/StepIndicator";
+import { ABTestCard } from "@/components/ABTestCard";
+import { BatchPins } from "@/components/BatchPins";
+import { Scheduler } from "@/components/Scheduler";
+import { ImageTemplates } from "@/components/ImageTemplates";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
 
@@ -186,6 +190,16 @@ export default function Home() {
     }
   };
 
+  const handleSelectTitle = (title: string) => {
+    if (pinContent) {
+      setPinContent({ ...pinContent, pinTitle: title });
+    }
+  };
+
+  const allKeywords = analysis
+    ? [...analysis.mainKeywords, ...analysis.longTailKeywords.slice(0, 3)]
+    : [];
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="text-center mb-8">
@@ -224,16 +238,57 @@ export default function Home() {
             boardCategory={analysis.boardCategory}
             boardTags={analysis.boardTags}
             boardStrategy={analysis.boardStrategy}
+            pinTitle={pinContent.pinTitle}
+            pinDescription={pinContent.pinDescription}
+            imageDataUrl={imageDataUrl ?? undefined}
+            websiteUrl={websiteUrl.trim() || undefined}
+            altText={pinContent.altText}
           />
         )}
 
         {pinContent && <PinContent pinContent={pinContent} />}
+
+        {/* A/B Testing for titles */}
+        {pinContent && analysis && (
+          <ABTestCard
+            topic={topic}
+            keywords={allKeywords}
+            onSelectTitle={handleSelectTitle}
+          />
+        )}
+
+        {/* Image Templates */}
+        {pinContent && (
+          <ImageTemplates
+            textOverlay={pinContent.suggestedTextOverlay}
+            onApplyTemplate={() => {/* template info stored for future canvas rendering */}}
+          />
+        )}
 
         {(imageDataUrl || isImageGenerating) && (
           <PinImage
             imageDataUrl={imageDataUrl ?? ""}
             isGenerating={isImageGenerating}
             onRegenerate={handleRegenerate}
+          />
+        )}
+
+        {/* Scheduler */}
+        {pinContent && (
+          <Scheduler
+            pinTitle={pinContent.pinTitle}
+            pinDescription={pinContent.pinDescription}
+            imageDataUrl={imageDataUrl ?? undefined}
+            bestTimeToPost={pinContent.bestTimeToPost}
+          />
+        )}
+
+        {/* Batch Pin Generation */}
+        {analysis && pinContent && (
+          <BatchPins
+            topic={topic}
+            keywords={allKeywords}
+            websiteUrl={websiteUrl.trim() || undefined}
           />
         )}
 

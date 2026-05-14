@@ -87,3 +87,80 @@ Important:
 - Image prompt should be detailed enough for DALL-E/Midjourney/Flux to generate a stunning pin
 - Text overlay should be bold and attention-grabbing`;
 }
+
+export function buildBatchPrompt(
+  topic: string,
+  keywords: string[],
+  count: number,
+  language: string,
+  websiteUrl?: string,
+  websiteContent?: string
+): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  let websiteContext = "";
+  if (websiteUrl && websiteContent) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nACTUAL website content:\n---\n${websiteContent}\n---\nAll pins should drive traffic to this website.`;
+  } else if (websiteUrl) {
+    websiteContext = `\nSource website/shop: ${websiteUrl}\nAll pins should drive traffic to this website.`;
+  }
+  return `You are a Pinterest content creation expert. Generate ${count} UNIQUE pin variations for the same topic. Each pin should have a completely different angle, style, and approach.
+
+Topic: "${topic}"${websiteContext}
+SEO Keywords: ${keywords.join(", ")}
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
+
+{
+  "pins": [
+    {
+      "pinTitle": "SEO-optimized title (max 100 chars, unique angle)",
+      "pinDescription": "SEO description (150-500 chars, unique approach)",
+      "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"],
+      "imagePrompt": "Detailed AI image prompt, vertical 2:3 ratio, completely different visual style from other pins",
+      "imageStyle": "photorealistic" | "illustration" | "flat-design" | "watercolor" | "minimalist" | "3d-render",
+      "suggestedTextOverlay": "Short text overlay (3-7 words)",
+      "altText": "Accessible alt text"
+    }
+  ]
+}
+
+CRITICAL: Each pin must have a DIFFERENT angle on the topic. Vary the visual style, the emotional appeal, and the target sub-audience. Do NOT create ${count} copies with minor word changes.`;
+}
+
+export function buildABTestPrompt(
+  topic: string,
+  keywords: string[],
+  language: string
+): string {
+  const lang = language === "de" ? "German" : language === "ru" ? "Russian" : "English";
+  return `You are a Pinterest SEO analyst specializing in A/B testing pin titles.
+
+Topic: "${topic}"
+SEO Keywords: ${keywords.join(", ")}
+
+Generate 4 title variations with detailed analysis. Each title should use a DIFFERENT psychological approach.
+
+Respond in ${lang} with a JSON object (no markdown, no code fences, just pure JSON):
+
+{
+  "variants": [
+    {
+      "title": "Pin title variation (max 100 chars)",
+      "approach": "curiosity" | "benefit" | "urgency" | "social-proof",
+      "seoScore": 85,
+      "keywordDensity": "high" | "medium" | "low",
+      "emotionalAppeal": "high" | "medium" | "low",
+      "clickPotential": "high" | "medium" | "low",
+      "reasoning": "Brief 1-sentence explanation of why this title works"
+    }
+  ]
+}
+
+Approaches:
+- curiosity: Makes user want to click to learn more
+- benefit: Clearly states what the user will get
+- urgency: Creates FOMO or time-pressure
+- social-proof: Uses numbers, statistics, or popularity signals
+
+The seoScore (0-100) should reflect keyword placement, length, and search intent match. Be honest — not all variants should score 90+.`;
+}
