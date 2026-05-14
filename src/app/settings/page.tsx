@@ -9,6 +9,8 @@ interface Settings {
   geminiKey: string;
   groqKey: string;
   togetherKey: string;
+  pinterestAppId: string;
+  pinterestAppSecret: string;
   apiKey?: string;
   provider?: string;
 }
@@ -20,7 +22,7 @@ interface PinterestTokens {
   expires_at: number;
 }
 
-const defaultSettings: Settings = { geminiKey: "", groqKey: "", togetherKey: "" };
+const defaultSettings: Settings = { geminiKey: "", groqKey: "", togetherKey: "", pinterestAppId: "", pinterestAppSecret: "" };
 
 function getSettingsSnapshot(): string {
   if (typeof window === "undefined") return JSON.stringify(defaultSettings);
@@ -39,14 +41,16 @@ function subscribe(callback: () => void): () => void {
 function migrateSettings(raw: Record<string, string>): Settings {
   if (raw.apiKey && !raw.geminiKey && !raw.groqKey) {
     if (raw.provider === "groq") {
-      return { geminiKey: "", groqKey: raw.apiKey, togetherKey: raw.togetherKey || "" };
+      return { geminiKey: "", groqKey: raw.apiKey, togetherKey: raw.togetherKey || "", pinterestAppId: raw.pinterestAppId || "", pinterestAppSecret: raw.pinterestAppSecret || "" };
     }
-    return { geminiKey: raw.apiKey, groqKey: "", togetherKey: raw.togetherKey || "" };
+    return { geminiKey: raw.apiKey, groqKey: "", togetherKey: raw.togetherKey || "", pinterestAppId: raw.pinterestAppId || "", pinterestAppSecret: raw.pinterestAppSecret || "" };
   }
   return {
     geminiKey: raw.geminiKey || "",
     groqKey: raw.groqKey || "",
     togetherKey: raw.togetherKey || "",
+    pinterestAppId: raw.pinterestAppId || "",
+    pinterestAppSecret: raw.pinterestAppSecret || "",
   };
 }
 
@@ -113,9 +117,13 @@ export default function SettingsPage() {
   }, [checkPinterestConnection]);
 
   const handlePinterestConnect = async () => {
+    if (!settings.pinterestAppId || !settings.pinterestAppSecret) {
+      alert(t(locale, "pinterestMissingCredentials"));
+      return;
+    }
     setPinterestConnecting(true);
     try {
-      const res = await fetch("/api/pinterest/auth");
+      const res = await fetch(`/api/pinterest/auth?app_id=${encodeURIComponent(settings.pinterestAppId)}&app_secret=${encodeURIComponent(settings.pinterestAppSecret)}`);
       const data = await res.json();
       if (data.authUrl) {
         const popup = window.open(data.authUrl, "pinterest_auth", "width=600,height=700");
@@ -139,13 +147,21 @@ export default function SettingsPage() {
 
   const handleSave = () => {
     localStorage.setItem("pincraft_settings", JSON.stringify(settings));
+    if (settings.pinterestAppId) {
+      localStorage.setItem("pincraft_pinterest_app_id", settings.pinterestAppId);
+    }
+    if (settings.pinterestAppSecret) {
+      localStorage.setItem("pincraft_pinterest_app_secret", settings.pinterestAppSecret);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleClear = () => {
     localStorage.removeItem("pincraft_settings");
-    setSettings({ geminiKey: "", groqKey: "", togetherKey: "" });
+    localStorage.removeItem("pincraft_pinterest_app_id");
+    localStorage.removeItem("pincraft_pinterest_app_secret");
+    setSettings({ geminiKey: "", groqKey: "", togetherKey: "", pinterestAppId: "", pinterestAppSecret: "" });
     setSaved(false);
   };
 
@@ -183,6 +199,48 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Step-by-step instructions */}
+          <div className="bg-red-50/50 border border-red-100 rounded-xl p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">{t(locale, "pinterestHowTo")}</h3>
+            <ol className="text-xs text-muted space-y-2 list-decimal list-inside">
+              <li>{t(locale, "pinterestStep1")}</li>
+              <li>{t(locale, "pinterestStep2")}</li>
+              <li>{t(locale, "pinterestStep3")}</li>
+              <li>{t(locale, "pinterestStep4")}</li>
+              <li>{t(locale, "pinterestStep5")}</li>
+            </ol>
+          </div>
+
+          {/* Pinterest App ID */}
+          <div>
+            <label htmlFor="pinterestAppId" className="block text-sm font-medium text-foreground mb-1.5">
+              {t(locale, "pinterestAppIdLabel")}
+            </label>
+            <input
+              id="pinterestAppId"
+              type="password"
+              value={settings.pinterestAppId}
+              onChange={(e) => setSettings((s) => ({ ...s, pinterestAppId: e.target.value }))}
+              placeholder={t(locale, "pinterestAppIdPlaceholder")}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 font-mono text-sm"
+            />
+          </div>
+
+          {/* Pinterest App Secret */}
+          <div>
+            <label htmlFor="pinterestAppSecret" className="block text-sm font-medium text-foreground mb-1.5">
+              {t(locale, "pinterestAppSecretLabel")}
+            </label>
+            <input
+              id="pinterestAppSecret"
+              type="password"
+              value={settings.pinterestAppSecret}
+              onChange={(e) => setSettings((s) => ({ ...s, pinterestAppSecret: e.target.value }))}
+              placeholder={t(locale, "pinterestAppSecretPlaceholder")}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 font-mono text-sm"
+            />
+          </div>
+
           {pinterestUser ? (
             <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
               <span className="text-sm text-green-700 font-medium">
@@ -199,7 +257,7 @@ export default function SettingsPage() {
           ) : (
             <button
               onClick={handlePinterestConnect}
-              disabled={pinterestConnecting}
+              disabled={pinterestConnecting || !settings.pinterestAppId || !settings.pinterestAppSecret}
               className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               <Link2 className="w-4 h-4" />
@@ -208,7 +266,6 @@ export default function SettingsPage() {
           )}
 
           <div className="space-y-2 text-xs text-muted">
-            <p>{t(locale, "pinterestSetupHint")}</p>
             {callbackUrl && (
               <div className="space-y-1">
                 <p className="font-medium text-foreground text-xs">{t(locale, "pinterestCallbackUrl")}:</p>
