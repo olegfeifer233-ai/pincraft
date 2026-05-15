@@ -54,7 +54,7 @@ interface PinContentData {
   pinVariations: PinVariation[];
 }
 
-function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string; apiKey?: string; provider?: string } {
+function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string; huggingFaceKey?: string; apiKey?: string; provider?: string } {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem("pincraft_settings");
@@ -90,6 +90,7 @@ export default function Home() {
           prompt,
           geminiKey: settings.geminiKey || undefined,
           togetherKey: settings.togetherKey || undefined,
+          huggingFaceKey: settings.huggingFaceKey || undefined,
         }),
       });
       const data = await res.json();
@@ -246,7 +247,13 @@ export default function Home() {
           />
         )}
 
-        {pinContent && <PinContent pinContent={pinContent} />}
+        {pinContent && (
+          <PinContent
+            pinContent={pinContent}
+            imageDataUrl={imageDataUrl ?? undefined}
+            websiteUrl={websiteUrl.trim() || undefined}
+          />
+        )}
 
         {/* A/B Testing for titles */}
         {pinContent && analysis && (

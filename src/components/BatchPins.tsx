@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, ImageIcon, Check, Download } from "lucide-react";
+import { Layers, ImageIcon, Check, Download, Send, ExternalLink, ChevronDown, Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { t } from "@/lib/i18n";
@@ -23,7 +23,25 @@ interface BatchPinsProps {
   websiteUrl?: string;
 }
 
-function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string } {
+function getPinterestTokens(): { access_token: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("pincraft_pinterest");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+interface PinterestBoard {
+  id: string;
+  name: string;
+  description: string;
+  pin_count: number;
+}
+
+function getStoredSettings(): { geminiKey?: string; groqKey?: string; togetherKey?: string; huggingFaceKey?: string } {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem("pincraft_settings");
@@ -41,6 +59,16 @@ export function BatchPins({ topic, keywords, websiteUrl }: BatchPinsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPins, setSelectedPins] = useState<Set<number>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Record<number, string>>({});
+  const [boards, setBoards] = useState<PinterestBoard[]>([]);
+  const [selectedBoards, setSelectedBoards] = useState<Record<number, string>>({});
+  const [publishingPins, setPublishingPins] = useState<Set<number>>(new Set());
+  const [publishResults, setPublishResults] = useState<Record<number, { success: boolean; message: string; pinUrl?: string }>>({});
+  const [showBoardsFor, setShowBoardsFor] = useState<Set<number>>(new Set());
+  const [isConnected] = useState(() => {
+    const tokens = getPinterestTokens();
+    return !!tokens?.access_token;
+  });
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -90,6 +118,7 @@ export function BatchPins({ topic, keywords, websiteUrl }: BatchPinsProps) {
           prompt: pin.imagePrompt,
           geminiKey: settings.geminiKey || undefined,
           togetherKey: settings.togetherKey || undefined,
+          huggingFaceKey: settings.huggingFaceKey || undefined,
         }),
       });
       const data = await res.json();
@@ -100,11 +129,84 @@ export function BatchPins({ topic, keywords, websiteUrl }: BatchPinsProps) {
           i === index ? { ...p, imageDataUrl: data.image.dataUrl, isGeneratingImage: false } : p
         )
       );
-    } catch {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : t(locale, "errorImage");
+      setImageErrors((prev) => ({ ...prev, [index]: errMsg }));
       setPins((prev) =>
         prev.map((p, i) => (i === index ? { ...p, isGeneratingImage: false } : p))
       );
     }
+  };
+
+  const loadBoards = async () => {
+    const tokens = getPinterestTokens();
+    if (!tokens?.access_token) return;
+    try {
+      const res = await fetch("/api/pinterest/boards", {
+        headers: { "x-pinterest-token": tokens.access_token },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBoards(data.boards || []);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handlePublishPin = async (index: number) => {
+    const tokens = getPinterestTokens();
+    const pin = pins[index];
+    const boardId = selectedBoards[index];
+    if (!tokens?.access_token || !pin || !boardId || !pin.imageDataUrl) return;
+
+    setPublishingPins((prev) => new Set(prev).add(index));
+    try {
+      const res = await fetch("/api/pinterest/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-pinterest-token": tokens.access_token },
+        body: JSON.stringify({
+          boardId,
+          title: pin.pinTitle,
+          description: pin.pinDescription,
+          imageBase64: pin.imageDataUrl,
+          link: websiteUrl,
+          altText: pin.altText,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPublishResults((prev) => ({
+          ...prev,
+          [index]: { success: true, message: t(locale, "pinterestPublished"), pinUrl: `https://www.pinterest.com/pin/${data.pin?.id}` },
+        }));
+      } else {
+        const data = await res.json();
+        setPublishResults((prev) => ({
+          ...prev,
+          [index]: { success: false, message: data.error || t(locale, "pinterestPublishError") },
+        }));
+      }
+    } catch {
+      setPublishResults((prev) => ({
+        ...prev,
+        [index]: { success: false, message: t(locale, "pinterestPublishError") },
+      }));
+    } finally {
+      setPublishingPins((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+    }
+  };
+
+  const toggleBoardsFor = async (index: number) => {
+    if (boards.length === 0) await loadBoards();
+    setShowBoardsFor((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
   };
 
   const toggleSelect = (index: number) => {
@@ -224,33 +326,98 @@ export function BatchPins({ topic, keywords, websiteUrl }: BatchPinsProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pl-8">
-                  {pin.imageDataUrl ? (
-                    <div className="flex items-center gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={pin.imageDataUrl}
-                        alt={pin.altText}
-                        className="w-16 h-24 object-cover rounded-lg border border-border"
-                      />
+                <div className="space-y-2 pl-8">
+                  <div className="flex items-center gap-2">
+                    {pin.imageDataUrl ? (
+                      <div className="flex items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={pin.imageDataUrl}
+                          alt={pin.altText}
+                          className="w-16 h-24 object-cover rounded-lg border border-border"
+                        />
+                        <button
+                          onClick={() => handleDownload(pin)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-accent border border-border transition-colors flex items-center gap-1"
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => handleDownload(pin)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-accent border border-border transition-colors flex items-center gap-1"
+                        onClick={() => generateImageForPin(i)}
+                        disabled={pin.isGeneratingImage}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-600 hover:bg-indigo-50 border border-indigo-200 disabled:opacity-50 transition-colors flex items-center gap-1"
                       >
-                        <Download className="w-3 h-3" />
+                        {pin.isGeneratingImage ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" />{t(locale, "generatingImage")}</>
+                        ) : (
+                          <><ImageIcon className="w-3 h-3" />{t(locale, "generateImage")}</>
+                        )}
                       </button>
+                    )}
+                  </div>
+
+                  {imageErrors[i] && (
+                    <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-1.5">
+                      {imageErrors[i]}
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => generateImageForPin(i)}
-                      disabled={pin.isGeneratingImage}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-600 hover:bg-indigo-50 border border-indigo-200 disabled:opacity-50 transition-colors flex items-center gap-1"
-                    >
-                      <ImageIcon className="w-3 h-3" />
-                      {pin.isGeneratingImage
-                        ? t(locale, "generatingImage")
-                        : t(locale, "generateImage")}
-                    </button>
+                  )}
+
+                  {/* Publish to Pinterest button for each pin */}
+                  {isConnected && pin.imageDataUrl && (
+                    <div className="space-y-2">
+                      {!showBoardsFor.has(i) ? (
+                        <button
+                          onClick={() => toggleBoardsFor(i)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 border border-red-200 transition-colors flex items-center gap-1"
+                        >
+                          <Send className="w-3 h-3" />
+                          {t(locale, "publishToPinterest")}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <select
+                              value={selectedBoards[i] || ""}
+                              onChange={(e) => setSelectedBoards((prev) => ({ ...prev, [i]: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs appearance-none pr-6"
+                            >
+                              <option value="">{t(locale, "pinterestSelectBoard")}</option>
+                              {boards.map((b) => (
+                                <option key={b.id} value={b.id}>{b.name}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="w-3 h-3 text-muted absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+                          <button
+                            onClick={() => handlePublishPin(i)}
+                            disabled={publishingPins.has(i) || !selectedBoards[i]}
+                            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-1"
+                          >
+                            {publishingPins.has(i) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Send className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      {publishResults[i] && (
+                        <div className={`text-xs rounded-lg px-3 py-1.5 ${
+                          publishResults[i].success
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700"
+                        }`}>
+                          {publishResults[i].message}
+                          {publishResults[i].pinUrl && (
+                            <a href={publishResults[i].pinUrl} target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center gap-0.5 underline">
+                              {t(locale, "pinterestViewPin")} <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

@@ -3,10 +3,11 @@ import { NextRequest } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { prompt, geminiKey: userGeminiKey, togetherKey: userTogetherKey } = body as {
+    const { prompt, geminiKey: userGeminiKey, togetherKey: userTogetherKey, huggingFaceKey: userHuggingFaceKey } = body as {
       prompt: string;
       geminiKey?: string;
       togetherKey?: string;
+      huggingFaceKey?: string;
     };
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
@@ -15,9 +16,10 @@ export async function POST(request: NextRequest) {
 
     const pinterestPrompt = `Create a vertical Pinterest pin image (2:3 aspect ratio). ${prompt.trim()}. The image should be visually striking, high quality, and designed to get saves and clicks on Pinterest. No text or letters in the image.`;
 
-    // Try Gemini Imagen first, then Together.ai FLUX
+    // Try Gemini Imagen first, then Together.ai FLUX, then Hugging Face
     const geminiKey = userGeminiKey || process.env.GEMINI_API_KEY;
     const togetherKey = userTogetherKey || process.env.TOGETHER_API_KEY;
+    const huggingFaceKey = userHuggingFaceKey || process.env.HUGGINGFACE_API_KEY;
 
     let lastError: string | null = null;
 
@@ -41,9 +43,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!geminiKey && !togetherKey) {
+    if (huggingFaceKey) {
+      try {
+        const result = await generateWithHuggingFace(huggingFaceKey, pinterestPrompt);
+        return Response.json({ success: true, image: result });
+      } catch (err) {
+        console.error("Hugging Face image generation failed:", err);
+        lastError = err instanceof Error ? err.message : "Hugging Face failed";
+      }
+    }
+
+    if (!geminiKey && !togetherKey && !huggingFaceKey) {
       return Response.json(
-        { error: "No image generation API key configured. Set GEMINI_API_KEY or TOGETHER_API_KEY." },
+        { error: "No image generation API key configured. Set a Gemini, Together.ai, or Hugging Face API key in Settings." },
         { status: 400 }
       );
     }
@@ -155,5 +167,42 @@ async function generateWithTogether(
   return {
     dataUrl: `data:image/png;base64,${b64}`,
     mimeType: "image/png",
+  };
+}
+
+async function generateWithHuggingFace(
+  apiKey: string,
+  prompt: string
+): Promise<{ dataUrl: string; mimeType: string }> {
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: {
+          width: 768,
+          height: 1152,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Hugging Face API error: ${response.status} ${errText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+  const contentType = response.headers.get("content-type") || "image/jpeg";
+
+  return {
+    dataUrl: `data:${contentType};base64,${base64}`,
+    mimeType: contentType,
   };
 }
