@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { InferenceClient } from "@huggingface/inference";
 
 export async function POST(request: NextRequest) {
   try {
@@ -174,35 +175,29 @@ async function generateWithHuggingFace(
   apiKey: string,
   prompt: string
 ): Promise<{ dataUrl: string; mimeType: string }> {
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+  const client = new InferenceClient(apiKey);
+
+  const result = await client.textToImage(
     {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+      provider: "auto",
+      model: "black-forest-labs/FLUX.1-schnell",
+      inputs: prompt,
+      parameters: {
+        width: 768,
+        height: 1152,
+        num_inference_steps: 4,
       },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          width: 768,
-          height: 1152,
-        },
-      }),
-    }
+    },
+    { outputType: "blob" },
   );
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Hugging Face API error: ${response.status} ${errText}`);
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
+  const blob = result as Blob;
+  const arrayBuffer = await blob.arrayBuffer();
   const base64 = Buffer.from(arrayBuffer).toString("base64");
-  const contentType = response.headers.get("content-type") || "image/jpeg";
+  const mimeType = blob.type || "image/jpeg";
 
   return {
-    dataUrl: `data:${contentType};base64,${base64}`,
-    mimeType: contentType,
+    dataUrl: `data:${mimeType};base64,${base64}`,
+    mimeType,
   };
 }
