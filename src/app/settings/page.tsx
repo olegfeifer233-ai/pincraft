@@ -9,6 +9,7 @@ interface Settings {
   geminiKey: string;
   groqKey: string;
   togetherKey: string;
+  huggingFaceKey: string;
   pinterestAppId: string;
   pinterestAppSecret: string;
   apiKey?: string;
@@ -22,7 +23,7 @@ interface PinterestTokens {
   expires_at: number;
 }
 
-const defaultSettings: Settings = { geminiKey: "", groqKey: "", togetherKey: "", pinterestAppId: "", pinterestAppSecret: "" };
+const defaultSettings: Settings = { geminiKey: "", groqKey: "", togetherKey: "", huggingFaceKey: "", pinterestAppId: "", pinterestAppSecret: "" };
 
 function getSettingsSnapshot(): string {
   if (typeof window === "undefined") return JSON.stringify(defaultSettings);
@@ -41,14 +42,15 @@ function subscribe(callback: () => void): () => void {
 function migrateSettings(raw: Record<string, string>): Settings {
   if (raw.apiKey && !raw.geminiKey && !raw.groqKey) {
     if (raw.provider === "groq") {
-      return { geminiKey: "", groqKey: raw.apiKey, togetherKey: raw.togetherKey || "", pinterestAppId: raw.pinterestAppId || "", pinterestAppSecret: raw.pinterestAppSecret || "" };
+      return { geminiKey: "", groqKey: raw.apiKey, togetherKey: raw.togetherKey || "", huggingFaceKey: raw.huggingFaceKey || "", pinterestAppId: raw.pinterestAppId || "", pinterestAppSecret: raw.pinterestAppSecret || "" };
     }
-    return { geminiKey: raw.apiKey, groqKey: "", togetherKey: raw.togetherKey || "", pinterestAppId: raw.pinterestAppId || "", pinterestAppSecret: raw.pinterestAppSecret || "" };
+    return { geminiKey: raw.apiKey, groqKey: "", togetherKey: raw.togetherKey || "", huggingFaceKey: raw.huggingFaceKey || "", pinterestAppId: raw.pinterestAppId || "", pinterestAppSecret: raw.pinterestAppSecret || "" };
   }
   return {
     geminiKey: raw.geminiKey || "",
     groqKey: raw.groqKey || "",
     togetherKey: raw.togetherKey || "",
+    huggingFaceKey: raw.huggingFaceKey || "",
     pinterestAppId: raw.pinterestAppId || "",
     pinterestAppSecret: raw.pinterestAppSecret || "",
   };
@@ -161,7 +163,7 @@ export default function SettingsPage() {
     localStorage.removeItem("pincraft_settings");
     localStorage.removeItem("pincraft_pinterest_app_id");
     localStorage.removeItem("pincraft_pinterest_app_secret");
-    setSettings({ geminiKey: "", groqKey: "", togetherKey: "", pinterestAppId: "", pinterestAppSecret: "" });
+    setSettings({ geminiKey: "", groqKey: "", togetherKey: "", huggingFaceKey: "", pinterestAppId: "", pinterestAppSecret: "" });
     setSaved(false);
   };
 
@@ -396,6 +398,41 @@ export default function SettingsPage() {
           >
             <ExternalLink className="w-3 h-3" />
             {t(locale, "togetherLink")}
+          </a>
+        </div>
+
+        {/* Hugging Face Key */}
+        <div className="bg-card-bg rounded-2xl border border-border p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center">
+              <span className="text-lg">&#x1F917;</span>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Hugging Face</h2>
+              <p className="text-sm text-muted">{t(locale, "huggingFaceKeyDesc")}</p>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="huggingFaceKey" className="block text-sm font-medium text-foreground mb-1.5">
+              API Key
+            </label>
+            <input
+              id="huggingFaceKey"
+              type="password"
+              value={settings.huggingFaceKey}
+              onChange={(e) => setSettings((s) => ({ ...s, huggingFaceKey: e.target.value }))}
+              placeholder={t(locale, "apiKeyPlaceholder")}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary font-mono text-sm"
+            />
+          </div>
+          <a
+            href="https://huggingface.co/settings/tokens"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-yellow-700 hover:underline"
+          >
+            <ExternalLink className="w-3 h-3" />
+            {t(locale, "huggingFaceLink")}
           </a>
         </div>
 

@@ -9,6 +9,11 @@ import {
   Eye,
   Copy,
   Check,
+  Send,
+  ExternalLink,
+  ChevronDown,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 import { useLocale } from "@/components/LocaleProvider";
@@ -32,8 +37,17 @@ interface PinContentData {
   pinVariations: PinVariation[];
 }
 
+interface PinterestBoard {
+  id: string;
+  name: string;
+  description: string;
+  pin_count: number;
+}
+
 interface PinContentProps {
   pinContent: PinContentData;
+  imageDataUrl?: string;
+  websiteUrl?: string;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -80,8 +94,96 @@ function StyleBadge({ style }: { style: string }) {
   );
 }
 
-export function PinContent({ pinContent }: PinContentProps) {
+function getPinterestTokens(): { access_token: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("pincraft_pinterest");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function PinContent({ pinContent, imageDataUrl, websiteUrl }: PinContentProps) {
   const { locale } = useLocale();
+  const [isConnected] = useState(() => {
+    const tokens = getPinterestTokens();
+    return !!tokens?.access_token;
+  });
+  const [boards, setBoards] = useState<PinterestBoard[]>([]);
+  const [selectedBoard, setSelectedBoard] = useState<string>("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishResult, setPublishResult] = useState<{ success: boolean; message: string; pinUrl?: string } | null>(null);
+  const [showBoards, setShowBoards] = useState(false);
+  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+
+  const loadBoards = async () => {
+    const tokens = getPinterestTokens();
+    if (!tokens?.access_token) return;
+    try {
+      const res = await fetch("/api/pinterest/boards", {
+        headers: { "x-pinterest-token": tokens.access_token },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBoards(data.boards || []);
+        setShowBoards(true);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleCreateBoard = async () => {
+    const tokens = getPinterestTokens();
+    if (!tokens?.access_token) return;
+    setIsCreatingBoard(true);
+    try {
+      const res = await fetch("/api/pinterest/boards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-pinterest-token": tokens.access_token },
+        body: JSON.stringify({ name: pinContent.pinTitle.slice(0, 50), description: pinContent.pinDescription.slice(0, 200) }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBoards((prev) => [...prev, data.board]);
+        setSelectedBoard(data.board.id);
+      }
+    } catch { /* ignore */ } finally {
+      setIsCreatingBoard(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    const tokens = getPinterestTokens();
+    if (!tokens?.access_token || !selectedBoard) return;
+    setIsPublishing(true);
+    setPublishResult(null);
+    try {
+      const res = await fetch("/api/pinterest/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-pinterest-token": tokens.access_token },
+        body: JSON.stringify({
+          boardId: selectedBoard,
+          title: pinContent.pinTitle,
+          description: pinContent.pinDescription,
+          imageBase64: imageDataUrl,
+          link: websiteUrl,
+          altText: pinContent.altText,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPublishResult({ success: true, message: t(locale, "pinterestPublished"), pinUrl: `https://www.pinterest.com/pin/${data.pin?.id}` });
+      } else {
+        const data = await res.json();
+        setPublishResult({ success: false, message: data.error || t(locale, "pinterestPublishError") });
+      }
+    } catch {
+      setPublishResult({ success: false, message: t(locale, "pinterestPublishError") });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   return (
     <div className="bg-card-bg rounded-2xl border border-border p-6 sm:p-8 animate-fade-in">
@@ -231,6 +333,83 @@ export function PinContent({ pinContent }: PinContentProps) {
             </div>
           </div>
         )}
+
+        {/* Publish to Pinterest */}
+        <div className="pt-4 border-t border-border space-y-3">
+          {!isConnected ? (
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <Send className="w-4 h-4" />
+              <span>{t(locale, "pinterestNotConnected")}</span>
+            </div>
+          ) : !imageDataUrl ? (
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <ImageIcon className="w-4 h-4" />
+              <span>{t(locale, "pinterestNoImage")}</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {!showBoards ? (
+                <button
+                  onClick={loadBoards}
+                  className="w-full px-4 py-3 rounded-xl bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {t(locale, "publishToPinterest")}
+                </button>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={selectedBoard}
+                        onChange={(e) => setSelectedBoard(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm appearance-none pr-8"
+                      >
+                        <option value="">{t(locale, "pinterestSelectBoard")}</option>
+                        {boards.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-muted absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <button
+                      onClick={handleCreateBoard}
+                      disabled={isCreatingBoard}
+                      className="px-3 py-2 rounded-lg border border-border text-sm hover:bg-accent transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={handlePublish}
+                    disabled={isPublishing || !selectedBoard}
+                    className="w-full px-4 py-2.5 rounded-xl bg-red-600 text-white font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isPublishing ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />{t(locale, "pinterestPublishing")}</>
+                    ) : (
+                      <><Send className="w-4 h-4" />{t(locale, "publishToPinterest")}</>
+                    )}
+                  </button>
+                </>
+              )}
+              {publishResult && (
+                <div className={`rounded-xl px-4 py-3 text-sm ${
+                  publishResult.success
+                    ? "bg-green-50 border border-green-200 text-green-700"
+                    : "bg-red-50 border border-red-200 text-red-700"
+                }`}>
+                  <span>{publishResult.message}</span>
+                  {publishResult.pinUrl && (
+                    <a href={publishResult.pinUrl} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 underline">
+                      {t(locale, "pinterestViewPin")} <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
